@@ -1,0 +1,22 @@
+# Application configuration.
+# Override path with: APP_CONFIG=/path/to/file.toml cargo run
+# Or pass as CLI arg:  cargo run -- /path/to/file.toml
+
+[server]
+host = "127.0.0.1"
+port = 3000
+static_dir = "static"
+
+[site]
+title = "Rusty Pages"
+page_title = "A server-rendered page in Rust"
+footer_year = 2026
+
+[content]
+dir = "content"
+article_file = "article.toml"
+stories_file = "stories.toml"
+
+[theme]
+# Maps to static/css/theme-{name}.css
+name = "light"

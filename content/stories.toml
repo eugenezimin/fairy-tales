@@ -1,0 +1,19 @@
+[[stories]]
+title = "The quiet rise of Rust on the web"
+snippet = "How a systems language found its way into HTTP servers."
+
+[[stories]]
+title = "Server-side rendering, again"
+snippet = "The pendulum swings back toward HTML over the wire."
+
+[[stories]]
+title = "Small binaries, big confidence"
+snippet = "Why teams are deploying single-binary web apps."
+
+[[stories]]
+title = "Templating in Rust"
+snippet = "Askama, Maud, and Tera compared."
+
+[[stories]]
+title = "Configuration as a first-class concern"
+snippet = "Loading and validating settings before anything else starts."

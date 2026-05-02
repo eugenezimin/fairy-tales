@@ -1,0 +1,38 @@
+[[sections]]
+id = "introduction"
+heading = "Introduction"
+paragraphs = [
+    "Welcome to a small demonstration of server-side rendered HTML, written entirely in Rust. The page you're reading was assembled on the server before being delivered to your browser.",
+    "The layout uses three columns: stories on the left, the article in the middle, and a table of contents on the right.",
+]
+
+[[sections]]
+id = "why-rust"
+heading = "Why Rust on the server?"
+paragraphs = [
+    "Rust gives you strong guarantees at compile time, predictable performance, and a small runtime footprint. For server-rendered pages, that translates into fast responses and confident deployments.",
+    "Frameworks like Axum keep request handling lightweight, while Askama compiles your templates into native Rust code.",
+]
+
+[[sections]]
+id = "modular-design"
+heading = "Modular design"
+paragraphs = [
+    "The application is split into focused modules: config, content, render, server, and an orchestrator that wires them together.",
+    "Each module owns one concern. Configuration is parsed and validated up front, so the server never starts in a broken state.",
+]
+
+[[sections]]
+id = "theming"
+heading = "Theming"
+paragraphs = [
+    "All visual styling lives in separate CSS files under static/css. The base layout sits in base.css, and each theme defines its own palette using CSS custom properties.",
+    "The active theme name comes from config — change it in config.toml, restart, and the page links a different stylesheet.",
+]
+
+[[sections]]
+id = "closing"
+heading = "Closing thoughts"
+paragraphs = [
+    "This is a starting point. From here you can plug in a database, add markdown rendering, hot-reload content, or wire up a richer routing layer.",
+]

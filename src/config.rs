@@ -1,0 +1,120 @@
+//! Configuration loading and validation.
+//!
+//! The application is driven entirely by a TOML config file. The path
+//! defaults to `config.toml` in the working directory, but can be
+//! overridden via the `APP_CONFIG` environment variable or a CLI arg.
+
+use anyhow::{Context, Result};
+use serde::Deserialize;
+use std::net::{IpAddr, SocketAddr};
+use std::path::{Path, PathBuf};
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct Config {
+    pub server: ServerConfig,
+    pub site: SiteConfig,
+    pub content: ContentConfig,
+    pub theme: ThemeConfig,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct ServerConfig {
+    pub host: IpAddr,
+    pub port: u16,
+    /// Path to serve static assets from (CSS, images, etc.)
+    pub static_dir: PathBuf,
+}
+
+impl ServerConfig {
+    pub fn socket_addr(&self) -> SocketAddr {
+        SocketAddr::new(self.host, self.port)
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct SiteConfig {
+    pub title: String,
+    pub page_title: String,
+    pub footer_year: u16,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct ContentConfig {
+    /// Directory holding the article + stories TOML files.
+    pub dir: PathBuf,
+    pub article_file: String,
+    pub stories_file: String,
+}
+
+impl ContentConfig {
+    pub fn article_path(&self) -> PathBuf {
+        self.dir.join(&self.article_file)
+    }
+
+    pub fn stories_path(&self) -> PathBuf {
+        self.dir.join(&self.stories_file)
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct ThemeConfig {
+    /// Active theme name; corresponds to `static/css/theme-{name}.css`.
+    pub name: String,
+}
+
+impl Config {
+    /// Load config from a path, parse TOML, and validate referenced files exist.
+    pub fn load<P: AsRef<Path>>(path: P) -> Result<Self> {
+        let path = path.as_ref();
+        let raw = std::fs::read_to_string(path)
+            .with_context(|| format!("reading config file at {}", path.display()))?;
+
+        let cfg: Config = toml::from_str(&raw)
+            .with_context(|| format!("parsing TOML config at {}", path.display()))?;
+
+        cfg.validate()?;
+        Ok(cfg)
+    }
+
+    /// Resolve which config file to load, in priority order:
+    /// 1. explicit CLI argument
+    /// 2. `APP_CONFIG` environment variable
+    /// 3. `./config.toml`
+    pub fn resolve_path(cli_arg: Option<String>) -> PathBuf {
+        if let Some(p) = cli_arg {
+            return PathBuf::from(p);
+        }
+        if let Ok(p) = std::env::var("APP_CONFIG") {
+            return PathBuf::from(p);
+        }
+        PathBuf::from("config.toml")
+    }
+
+    fn validate(&self) -> Result<()> {
+        anyhow::ensure!(
+            self.server.static_dir.is_dir(),
+            "server.static_dir does not exist or is not a directory: {}",
+            self.server.static_dir.display()
+        );
+        anyhow::ensure!(
+            self.content.dir.is_dir(),
+            "content.dir does not exist or is not a directory: {}",
+            self.content.dir.display()
+        );
+        anyhow::ensure!(
+            self.content.article_path().is_file(),
+            "article file not found: {}",
+            self.content.article_path().display()
+        );
+        anyhow::ensure!(
+            self.content.stories_path().is_file(),
+            "stories file not found: {}",
+            self.content.stories_path().display()
+        );
+        anyhow::ensure!(
+            !self.theme.name.trim().is_empty(),
+            "theme.name must not be empty"
+        );
+        Ok(())
+    }
+}
