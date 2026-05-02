@@ -1,0 +1,30 @@
+/* =========================================================
+   theme-dark.css — DARK THEME
+   To use: replace theme-light.css link in templates/index.html
+   with: <link rel="stylesheet" href="/static/css/theme-dark.css">
+   ========================================================= */
+
+:root {
+    /* Fonts */
+    --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-heading: "Merriweather", Georgia, "Times New Roman", serif;
+
+    /* Core palette */
+    --color-bg: #14171c;
+    --color-text: #e4e6eb;
+    --color-muted: #9ca3af;
+    --color-accent: #ff7a59;
+    --color-border: #2a2f38;
+    --color-hover: #232830;
+
+    /* Surfaces */
+    --color-header-bg: #1a1d23;
+    --color-header-text: #e4e6eb;
+    --color-sidebar-bg: #1a1d23;
+    --color-article-bg: #1a1d23;
+    --color-footer-bg: #0e1116;
+    --color-footer-text: #9ca3af;
+
+    /* Shape */
+    --radius: 6px;
+}

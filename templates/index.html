@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="{{ theme }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }} — {{ site_title }}</title>
+
+    <!-- Base layout (structure only, no colors) -->
+    <link rel="stylesheet" href="/static/css/base.css">
+    <!-- Theme (colors, fonts, accents). Swap this file to change appearance. -->
+    <link rel="stylesheet" href="/static/css/theme-light.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="site-header__inner">
+            <h1 class="site-header__title">{{ site_title }}</h1>
+            <nav class="site-header__nav">
+                <a href="/">Home</a>
+                <a href="#">Articles</a>
+                <a href="#">About</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="layout">
+        <!-- Left column: story headers -->
+        <aside class="layout__left" aria-label="Recent stories">
+            <h2 class="column-title">Recent stories</h2>
+            <ul class="story-list">
+                {% for story in stories %}
+                <li class="story-list__item">
+                    <a href="#" class="story-list__link">
+                        <span class="story-list__title">{{ story.title }}</span>
+                        <span class="story-list__snippet">{{ story.snippet }}</span>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </aside>
+
+        <!-- Middle column: main article -->
+        <article class="layout__main">
+            <h1 class="article__title">{{ page_title }}</h1>
+            {% for section in sections %}
+            <section id="{{ section.id }}" class="article__section">
+                <h2 class="article__heading">{{ section.heading }}</h2>
+                {% for p in section.paragraphs %}
+                <p class="article__paragraph">{{ p }}</p>
+                {% endfor %}
+            </section>
+            {% endfor %}
+        </article>
+
+        <!-- Right column: table of contents -->
+        <aside class="layout__right" aria-label="Table of contents">
+            <h2 class="column-title">Contents</h2>
+            <nav class="toc">
+                <ol class="toc__list">
+                    {% for entry in toc %}
+                    <li class="toc__item">
+                        <a class="toc__link" href="#{{ entry.anchor }}">{{ entry.label }}</a>
+                    </li>
+                    {% endfor %}
+                </ol>
+            </nav>
+        </aside>
+    </main>
+
+    <footer class="site-footer">
+        <div class="site-footer__inner">
+            <p>&copy; {{ year }} {{ site_title }}. Rendered with Rust.</p>
+        </div>
+    </footer>
+</body>
+</html>

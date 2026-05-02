@@ -1,0 +1,30 @@
+/* =========================================================
+   theme-light.css — DEFAULT THEME
+   Defines color palette and fonts. Swap this file with
+   theme-dark.css, theme-sepia.css, etc. to change appearance.
+   ========================================================= */
+
+:root {
+    /* Fonts */
+    --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-heading: "Merriweather", Georgia, "Times New Roman", serif;
+
+    /* Core palette */
+    --color-bg: #f7f7f5;
+    --color-text: #1f2933;
+    --color-muted: #6b7280;
+    --color-accent: #c0392b;
+    --color-border: #e5e5e0;
+    --color-hover: #f0e8e6;
+
+    /* Surfaces */
+    --color-header-bg: #ffffff;
+    --color-header-text: #1f2933;
+    --color-sidebar-bg: #ffffff;
+    --color-article-bg: #ffffff;
+    --color-footer-bg: #1f2933;
+    --color-footer-text: #d1d5db;
+
+    /* Shape */
+    --radius: 6px;
+}
