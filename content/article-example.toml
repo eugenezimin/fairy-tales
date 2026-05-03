@@ -30,7 +30,7 @@ published = "2026-05-02"
 type = "paragraphs"
 id   = "lead"
 paragraphs = [
-    "Every web framework promises simplicity, speed, and safety. Rust, unusually, can deliver all three at once — but the path there is littered with lifetime annotations and a steep learning curve. This article walks through building a small but complete server-side-rendered site, explaining the decisions along the way.",
+    "Every web framework promises simplicity, speed, and safety. Rust, unusually, can deliver all three at once — but the path there is littered with lifetime annotations and a steep learning curve. [[image:src=/static/img/forest.jpg|alt=Misty forest|flow=right]]This article walks through building a small but complete server-side-rendered site, explaining the decisions along the way.",
     "By the end you will have a working Axum application, an Askama template, a layered CSS theming system, and enough confidence to extend it in any direction you like.",
 ]
 
@@ -51,7 +51,7 @@ type    = "h3"
 id      = "choosing-axum"
 heading = "Choosing Axum"
 paragraphs = [
-    "Axum sits on top of Tokio and Hyper. It gives you typed extractors, a familiar router API, and Tower middleware compatibility — all without hiding the underlying async machinery.",
+    "Axum sits on top of Tokio and Hyper. It gives you typed extractors, a familiar router API, and Tower middleware compatibility — [[link:src=/home|text=all without hiding]] the underlying async machinery.",
     "The router is just a value. Routes, middleware layers, and shared state compose in a single expression and are validated at compile time, so misconfigured routes fail to build rather than fail at runtime.",
 ]
 
