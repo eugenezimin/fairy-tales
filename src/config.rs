@@ -40,20 +40,8 @@ pub struct SiteConfig {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct ContentConfig {
-    /// Directory holding the article + stories TOML files.
+    /// Directory holding article TOML files (one file = one article).
     pub dir: PathBuf,
-    pub article_file: String,
-    pub stories_file: String,
-}
-
-impl ContentConfig {
-    pub fn article_path(&self) -> PathBuf {
-        self.dir.join(&self.article_file)
-    }
-
-    pub fn stories_path(&self) -> PathBuf {
-        self.dir.join(&self.stories_file)
-    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -100,16 +88,6 @@ impl Config {
             self.content.dir.is_dir(),
             "content.dir does not exist or is not a directory: {}",
             self.content.dir.display()
-        );
-        anyhow::ensure!(
-            self.content.article_path().is_file(),
-            "article file not found: {}",
-            self.content.article_path().display()
-        );
-        anyhow::ensure!(
-            self.content.stories_path().is_file(),
-            "stories file not found: {}",
-            self.content.stories_path().display()
         );
         anyhow::ensure!(
             !self.theme.name.trim().is_empty(),

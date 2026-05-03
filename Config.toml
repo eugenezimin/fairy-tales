@@ -13,9 +13,8 @@ page_title = "A server-rendered page in Rust"
 footer_year = 2026
 
 [content]
+# Every .toml file in this directory is treated as a separate article.
 dir = "content"
-article_file = "article.toml"
-stories_file = "stories.toml"
 
 [theme]
 # Maps to static/css/theme-{name}.css

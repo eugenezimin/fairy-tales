@@ -189,12 +189,23 @@ body {
 
 .toc__list {
     list-style: none;
-    counter-reset: toc;
+    padding-left: 0.75rem;
+    border-left: 1px dotted var(--color-border);
 }
 
 .toc__item {
-    counter-increment: toc;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
+    position: relative;
+}
+
+/* Dotted connector tick from the vertical line to the link */
+.toc__item::before {
+    content: "";
+    position: absolute;
+    left: -0.75rem;
+    top: 50%;
+    width: 0.5rem;
+    border-top: 1px dotted var(--color-border);
 }
 
 .toc__link {
@@ -202,16 +213,16 @@ body {
     text-decoration: none;
     color: var(--color-muted);
     font-size: 0.9rem;
-    padding: 0.4rem 0.5rem;
+    padding: 0.35rem 0.5rem;
     border-radius: 4px;
     border-left: 2px solid transparent;
     transition: all 0.15s ease;
 }
 
-.toc__link::before {
-    content: counter(toc) ". ";
+.toc__link:hover {
     color: var(--color-accent);
-    font-weight: 600;
+    border-left-color: var(--color-accent);
+    background: var(--color-hover);
 }
 
 .toc__link:hover {
