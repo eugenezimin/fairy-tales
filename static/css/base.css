@@ -152,14 +152,33 @@ body {
     color: var(--color-accent);
 }
 
+/* ---------- Sidebar divider ---------- */
+
+.sidebar-divider {
+    border: none;
+    border-top: 1px solid var(--color-border);
+    margin: 1rem 0;
+}
+
+/* Current story link — accent colour always, no hover change */
+.story-list__link--current .story-list__title,
+.story-list__link--current:hover .story-list__title,
+.story-list__link--current:visited .story-list__title,
+.story-list__link--current:active .story-list__title {
+    color: var(--color-accent);
+}
+
 /* Suppress visited/active colour changes — hover only */
 .story-list__link:visited .story-list__title,
-.story-list__link:active  .story-list__title {
+.story-list__link:active  .story-list__title,
+.story-list__link:focus   .story-list__title {
     color: var(--color-text);
 }
 .story-list__link:visited,
-.story-list__link:active {
+.story-list__link:active,
+.story-list__link:focus {
     color: inherit;
+    outline: none;
 }
 
 /* ---------- Current story ---------- */

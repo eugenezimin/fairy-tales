@@ -65,18 +65,25 @@
     </header>
 
     <main class="layout">
-
-        <aside class="layout__left" aria-label="Stories">
+        <aside class="layout__left" aria-label="Current Story">
             <section class="current-story">
                 <h2 class="column-title">Current story</h2>
-                <p class="current-story__title">{{ page_title }}</p>
+                <ul class="story-list">
+                    <li class="story-list__item story-list__item--current">
+                        <a href="/article/{{ article_slug }}" class="story-list__link story-list__link--current">
+                            <span class="story-list__title">{{ page_title }}</span>
+                        </a>
+                    </li>
+                </ul>
             </section>
+        </aside>
+        <aside class="layout__left" aria-label="Other Stories">        
             <section class="random-stories">
-                <h2 class="column-title">Random stories</h2>
+                <h2 class="column-title">Other stories</h2>
                 <ul class="story-list">
                     {% for story in stories %}
                     <li class="story-list__item">
-                        <a href="#" class="story-list__link">
+                        <a href="/article/{{ story.slug }}" class="story-list__link">
                             <span class="story-list__title">{{ story.title }}</span>
                             <span class="story-list__snippet">{{ story.snippet }}</span>
                         </a>
