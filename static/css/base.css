@@ -152,6 +152,31 @@ body {
     color: var(--color-accent);
 }
 
+/* Suppress visited/active colour changes — hover only */
+.story-list__link:visited .story-list__title,
+.story-list__link:active  .story-list__title {
+    color: var(--color-text);
+}
+.story-list__link:visited,
+.story-list__link:active {
+    color: inherit;
+}
+
+/* ---------- Current story ---------- */
+
+.current-story {
+    margin-bottom: 1.25rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.current-story__title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--color-text);
+    line-height: 1.4;
+}
+
 /* ---------- Middle column: article ---------- */
 
 .article__title {

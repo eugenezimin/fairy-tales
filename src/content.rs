@@ -1,8 +1,9 @@
 //! Content loading.
 //!
-//! Scans `content/` for every `.toml` and `.md` file; each file is one article.
-//! One article is selected at random to render on the main page.
-//! The sidebar shows a random subset of story headers from all articles.
+//! On every request the content directory is rescanned so new articles
+//! are picked up without a restart. Only the article that will actually
+//! be rendered is fully parsed; all others are read just far enough to
+//! extract the title and slug for the sidebar.
 
 use anyhow::{Context, Result};
 use serde::Deserialize;
@@ -34,14 +35,12 @@ pub struct RawSection {
     pub heading: String,
     #[serde(default)]
     pub paragraphs: Vec<String>,
-    /// For `type = "ad"` sections.
     #[serde(default)]
     pub slot: String,
 }
 
 // ---------- Domain types ----------
 
-/// A single inline element within a paragraph.
 #[derive(Debug, Clone)]
 pub enum Inline {
     Text(String),
@@ -56,11 +55,9 @@ pub enum Inline {
     },
 }
 
-/// A rendered paragraph as a list of inline elements.
 #[derive(Debug, Clone)]
 pub struct Paragraph(pub Vec<Inline>);
 
-/// A heading level used in articles.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HeadingLevel {
     H2,
@@ -68,7 +65,6 @@ pub enum HeadingLevel {
     H4,
 }
 
-/// A processed article section ready for the template.
 #[derive(Debug, Clone)]
 pub enum Section {
     Heading {
@@ -104,7 +100,6 @@ impl Section {
     }
 }
 
-/// A fully processed article.
 #[derive(Debug, Clone)]
 pub struct Article {
     pub title: String,
@@ -114,7 +109,7 @@ pub struct Article {
     pub sections: Vec<Section>,
 }
 
-/// A brief card shown in the sidebar.
+/// Lightweight card shown in the sidebar.
 #[derive(Debug, Clone)]
 pub struct StoryHeader {
     pub title: String,
@@ -122,47 +117,71 @@ pub struct StoryHeader {
     pub snippet: String,
 }
 
-/// Everything the index page needs.
-#[derive(Debug, Clone)]
+/// Everything the page needs.
 pub struct ContentBundle {
     pub article: Article,
     pub stories: Vec<StoryHeader>,
 }
 
-// ---------- Loader ----------
+// ---------- Public API ----------
 
-pub fn load(cfg: &ContentConfig) -> Result<ContentBundle> {
-    let articles = load_all_articles(&cfg.dir)?;
+/// Rescan the content directory, then fully parse only the article to render.
+///
+/// `requested_slug` — `Some("my-slug")` for a specific article, `None` to pick randomly.
+pub fn load(cfg: &ContentConfig, requested_slug: Option<&str>) -> Result<ContentBundle> {
+    let metas = scan_metas(&cfg.dir)?;
     anyhow::ensure!(
-        !articles.is_empty(),
+        !metas.is_empty(),
         "no .toml or .md files found in {:?}",
         cfg.dir
     );
 
-    let idx = random_index(articles.len());
-    let main_article = articles[idx].clone();
+    let chosen_idx = if let Some(slug) = requested_slug {
+        metas
+            .iter()
+            .position(|m| m.slug == slug)
+            .with_context(|| format!("no article with slug '{slug}'"))?
+    } else {
+        random_index(metas.len())
+    };
 
-    let mut stories: Vec<StoryHeader> = articles
+    // Sidebar cards come from cheap metadata — no sections parsed.
+    let mut stories: Vec<StoryHeader> = metas
         .iter()
-        .map(|a| StoryHeader {
-            title: a.title.clone(),
-            slug: a.slug.clone(),
-            snippet: first_text_snippet(a),
+        .map(|m| StoryHeader {
+            title: m.title.clone(),
+            slug: m.slug.clone(),
+            snippet: String::new(),
         })
         .collect();
 
+    // Fully parse only the chosen article.
+    let article = load_one_article(&metas[chosen_idx].path)?;
+    stories[chosen_idx].snippet = first_text_snippet(&article);
+
     shuffle(&mut stories);
 
-    Ok(ContentBundle {
-        article: main_article,
-        stories,
-    })
+    Ok(ContentBundle { article, stories })
 }
 
-// ---------- Parsing ----------
+// ---------- Scanning ----------
 
-fn load_all_articles(dir: &Path) -> Result<Vec<Article>> {
-    let mut articles = Vec::new();
+struct ArticleMeta {
+    title: String,
+    slug: String,
+    path: std::path::PathBuf,
+}
+
+/// Read every content file just enough to extract title + slug.
+fn scan_metas(dir: &Path) -> Result<Vec<ArticleMeta>> {
+    #[derive(Deserialize)]
+    struct TitleOnly {
+        title: String,
+        #[serde(default)]
+        slug: String,
+    }
+
+    let mut metas = Vec::new();
 
     let entries = std::fs::read_dir(dir)
         .with_context(|| format!("reading content directory: {}", dir.display()))?;
@@ -172,44 +191,74 @@ fn load_all_articles(dir: &Path) -> Result<Vec<Article>> {
         let path = entry.path();
 
         let ext = path.extension().and_then(|e| e.to_str());
-        let article = match ext {
+        let (title, slug) = match ext {
             Some("toml") => {
                 let raw = std::fs::read_to_string(&path)
                     .with_context(|| format!("reading {}", path.display()))?;
-                let raw_article: RawArticle = toml::from_str(&raw)
-                    .with_context(|| format!("parsing TOML at {}", path.display()))?;
-                process_article(raw_article)
+                let t: TitleOnly = toml::from_str(&raw)
+                    .with_context(|| format!("parsing title from {}", path.display()))?;
+                let slug = if t.slug.is_empty() {
+                    slugify(&t.title)
+                } else {
+                    t.slug
+                };
+                (t.title, slug)
             }
             Some("md") => {
                 let raw = std::fs::read_to_string(&path)
                     .with_context(|| format!("reading {}", path.display()))?;
-                parse_markdown_article(&raw)
-                    .with_context(|| format!("parsing Markdown at {}", path.display()))?
+                let (front, _) = split_front_matter(&raw);
+                let mut title = String::new();
+                let mut slug = String::new();
+                for line in front.lines() {
+                    if let Some((k, v)) = split_kv(line.trim()) {
+                        match k {
+                            "title" => title = v.to_string(),
+                            "slug" => slug = v.to_string(),
+                            _ => {}
+                        }
+                    }
+                }
+                if title.is_empty() {
+                    continue; // skip files with no title
+                }
+                if slug.is_empty() {
+                    slug = slugify(&title);
+                }
+                (title, slug)
             }
             _ => continue,
         };
 
-        articles.push(article);
+        metas.push(ArticleMeta { title, slug, path });
     }
 
-    articles.sort_by(|a, b| a.slug.cmp(&b.slug));
-    Ok(articles)
+    metas.sort_by(|a, b| a.slug.cmp(&b.slug));
+    Ok(metas)
+}
+
+/// Fully parse a single article file (TOML or Markdown).
+fn load_one_article(path: &Path) -> Result<Article> {
+    let raw =
+        std::fs::read_to_string(path).with_context(|| format!("reading {}", path.display()))?;
+
+    match path.extension().and_then(|e| e.to_str()) {
+        Some("toml") => {
+            let raw_article: RawArticle = toml::from_str(&raw)
+                .with_context(|| format!("parsing TOML at {}", path.display()))?;
+            Ok(process_article(raw_article))
+        }
+        Some("md") => parse_markdown_article(&raw)
+            .with_context(|| format!("parsing Markdown at {}", path.display())),
+        _ => anyhow::bail!("unsupported file type: {}", path.display()),
+    }
 }
 
 // ---------- Markdown parser ----------
-//
-// Format:
-//   Optional TOML front matter fenced by `+++` lines.
-//   Body uses standard Markdown headings (## / ### / ####).
-//   Images:  ![alt](src){flow=right}
-//   Links:   [text](href)
-//   Ad slots: <!-- ad: slot-name -->
-//   Paragraphs: blank-line separated blocks of text.
 
 fn parse_markdown_article(raw: &str) -> Result<Article> {
     let (front, body) = split_front_matter(raw);
 
-    // Parse front matter fields (simple key = "value" pairs).
     let mut title = String::new();
     let mut slug = String::new();
     let mut author = String::new();
@@ -248,18 +297,15 @@ fn parse_markdown_article(raw: &str) -> Result<Article> {
     })
 }
 
-/// Split `+++\n...\n+++\n` front matter from body. Returns ("", full_text)
-/// if no front matter is present.
 fn split_front_matter(raw: &str) -> (&str, &str) {
     let raw = raw.trim_start_matches('\n');
     if !raw.starts_with("+++") {
         return ("", raw);
     }
-    // Skip past the opening +++
     let after_open = &raw[3..].trim_start_matches('\n');
     if let Some(close) = after_open.find("\n+++") {
         let front = &after_open[..close];
-        let body = &after_open[close + 4..]; // skip \n+++
+        let body = &after_open[close + 4..];
         let body = body.trim_start_matches('\n');
         (front, body)
     } else {
@@ -267,7 +313,6 @@ fn split_front_matter(raw: &str) -> (&str, &str) {
     }
 }
 
-/// Parse `key = "value"` or `key = value` lines.
 fn split_kv(line: &str) -> Option<(&str, &str)> {
     let eq = line.find('=')?;
     let key = line[..eq].trim();
@@ -279,17 +324,10 @@ fn split_kv(line: &str) -> Option<(&str, &str)> {
     }
 }
 
-/// Parse the Markdown body into sections.
-///
-/// State machine: we accumulate plain paragraphs. When we hit a heading or
-/// ad comment we flush accumulated paragraphs then open a new section.
 fn parse_md_body(body: &str) -> Vec<Section> {
     let mut sections: Vec<Section> = Vec::new();
-    // Pending paragraphs not yet attached to a heading.
     let mut pending_paras: Vec<Paragraph> = Vec::new();
-    // The current open heading section (level, id, heading, paragraphs).
     let mut current_heading: Option<(HeadingLevel, String, String, Vec<Paragraph>)> = None;
-    // Counter for generating unique ids for paragraph-only blocks.
     let mut para_block_idx: usize = 0;
 
     let flush_pending = |sections: &mut Vec<Section>,
@@ -323,7 +361,6 @@ fn parse_md_body(body: &str) -> Vec<Section> {
             }
         };
 
-    // Collect non-empty lines into paragraph blocks separated by blank lines.
     let mut current_para_lines: Vec<&str> = Vec::new();
 
     let emit_para = |line_buf: &mut Vec<&str>, pending: &mut Vec<Paragraph>| {
@@ -338,7 +375,6 @@ fn parse_md_body(body: &str) -> Vec<Section> {
     };
 
     for line in body.lines() {
-        // Heading?
         if let Some(stripped) = line.strip_prefix("#### ") {
             emit_para(&mut current_para_lines, &mut pending_paras);
             flush_pending(
@@ -379,7 +415,6 @@ fn parse_md_body(body: &str) -> Vec<Section> {
             continue;
         }
 
-        // Ad comment: <!-- ad: slot-name -->
         if let Some(slot) = parse_ad_comment(line) {
             emit_para(&mut current_para_lines, &mut pending_paras);
             flush_pending(
@@ -396,7 +431,6 @@ fn parse_md_body(body: &str) -> Vec<Section> {
             continue;
         }
 
-        // Blank line: end of a paragraph.
         if line.trim().is_empty() {
             emit_para(&mut current_para_lines, &mut pending_paras);
             continue;
@@ -405,7 +439,6 @@ fn parse_md_body(body: &str) -> Vec<Section> {
         current_para_lines.push(line);
     }
 
-    // Flush whatever remains.
     emit_para(&mut current_para_lines, &mut pending_paras);
     flush_pending(
         &mut sections,
@@ -418,7 +451,6 @@ fn parse_md_body(body: &str) -> Vec<Section> {
     sections
 }
 
-/// Parse `<!-- ad: slot-name -->` returning `Some("slot-name")`.
 fn parse_ad_comment(line: &str) -> Option<String> {
     let line = line.trim();
     let inner = line.strip_prefix("<!--")?.strip_suffix("-->")?;
@@ -427,16 +459,11 @@ fn parse_ad_comment(line: &str) -> Option<String> {
     Some(slot.trim().to_string())
 }
 
-/// Parse a single paragraph line into inlines, supporting:
-///   ![alt](src){flow=right}   → Image
-///   [text](href)              → Link
-///   everything else           → Text
 fn parse_md_paragraph(raw: &str) -> Paragraph {
     let mut inlines = Vec::new();
     let mut rest = raw;
 
     while !rest.is_empty() {
-        // Image: ![alt](src){flow=...} or ![alt](src)
         if let Some(img_start) = rest.find("![") {
             if img_start > 0 {
                 inlines.push(Inline::Text(rest[..img_start].to_string()));
@@ -448,7 +475,6 @@ fn parse_md_paragraph(raw: &str) -> Paragraph {
                 if let Some(src_end) = after_alt.find(')') {
                     let src = &after_alt[..src_end];
                     let after_src = &after_alt[src_end + 1..];
-                    // Optional {flow=...}
                     let (flow, consumed) = if after_src.starts_with('{') {
                         if let Some(brace_end) = after_src.find('}') {
                             let attrs = &after_src[1..brace_end];
@@ -469,13 +495,11 @@ fn parse_md_paragraph(raw: &str) -> Paragraph {
                     continue;
                 }
             }
-            // Malformed image — emit as text.
             inlines.push(Inline::Text(rest[img_start..img_start + 2].to_string()));
             rest = &rest[img_start + 2..];
             continue;
         }
 
-        // Link: [text](href)
         if let Some(link_start) = rest.find('[') {
             if link_start > 0 {
                 inlines.push(Inline::Text(rest[..link_start].to_string()));
@@ -494,13 +518,11 @@ fn parse_md_paragraph(raw: &str) -> Paragraph {
                     continue;
                 }
             }
-            // Malformed link — emit as text.
             inlines.push(Inline::Text(rest[link_start..link_start + 1].to_string()));
             rest = &rest[link_start + 1..];
             continue;
         }
 
-        // Plain text — no more special tokens.
         inlines.push(Inline::Text(rest.to_string()));
         break;
     }
@@ -508,17 +530,15 @@ fn parse_md_paragraph(raw: &str) -> Paragraph {
     Paragraph(inlines)
 }
 
-// ---------- TOML processing (unchanged) ----------
+// ---------- TOML processing ----------
 
 fn process_article(raw: RawArticle) -> Article {
     let sections = raw.sections.into_iter().map(process_section).collect();
-
     let slug = if raw.slug.is_empty() {
         slugify(&raw.title)
     } else {
         raw.slug
     };
-
     Article {
         title: raw.title,
         slug,
@@ -561,8 +581,6 @@ fn process_section(raw: RawSection) -> Section {
     }
 }
 
-// ---------- TOML inline parser ----------
-
 fn parse_paragraph(raw: &str) -> Paragraph {
     let mut inlines = Vec::new();
     let mut rest = raw;
@@ -571,12 +589,10 @@ fn parse_paragraph(raw: &str) -> Paragraph {
         if start > 0 {
             inlines.push(Inline::Text(rest[..start].to_string()));
         }
-
         let after_open = &rest[start + 2..];
         if let Some(end_offset) = after_open.find("]]") {
             let tag_body = &after_open[..end_offset];
             rest = &after_open[end_offset + 2..];
-
             if let Some(inline) = parse_inline_tag(tag_body) {
                 inlines.push(inline);
             }
@@ -590,7 +606,6 @@ fn parse_paragraph(raw: &str) -> Paragraph {
     if !rest.is_empty() {
         inlines.push(Inline::Text(rest.to_string()));
     }
-
     Paragraph(inlines)
 }
 

@@ -1,12 +1,13 @@
 //! HTTP server.
 //!
-//! Builds the Axum router from `AppState` and runs it. Handlers are kept
-//! deliberately thin — they pull from state and delegate to `render`.
+//! Builds the Axum router from `AppState` and runs it. Content is loaded
+//! fresh on every request (directory rescan + single article parse) so new
+//! files are picked up without a restart and RAM stays minimal.
 
 use anyhow::{Context, Result};
 use axum::{
     Router,
-    extract::State,
+    extract::{Path, State},
     http::{HeaderMap, StatusCode},
     response::{Html, IntoResponse},
     routing::get,
@@ -16,14 +17,14 @@ use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
 
 use crate::config::Config;
-use crate::content::ContentBundle;
+use crate::content;
 use crate::render;
 
 /// Shared, read-only application state passed to every handler.
+/// Content is intentionally absent — it is loaded per-request.
 #[derive(Clone)]
 pub struct AppState {
     pub config: Arc<Config>,
-    pub content: Arc<ContentBundle>,
 }
 
 pub fn build_router(state: AppState) -> Router {
@@ -31,6 +32,7 @@ pub fn build_router(state: AppState) -> Router {
 
     Router::new()
         .route("/", get(index_handler))
+        .route("/article/:slug", get(article_handler))
         .route("/healthz", get(health_handler))
         .nest_service("/static", ServeDir::new(static_dir))
         .layer(TraceLayer::new_for_http())
@@ -55,14 +57,33 @@ pub async fn run(state: AppState) -> Result<()> {
 // ---------- Handlers ----------
 
 async fn index_handler(State(state): State<AppState>, headers: HeaderMap) -> impl IntoResponse {
+    serve_page(state, headers, None).await
+}
+
+async fn article_handler(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path(slug): Path<String>,
+) -> impl IntoResponse {
+    serve_page(state, headers, Some(slug)).await
+}
+
+async fn serve_page(
+    state: AppState,
+    headers: HeaderMap,
+    slug: Option<String>,
+) -> impl IntoResponse {
     let is_mobile = detect_mobile(&headers);
 
-    match render::render_index(
-        &state.config.site,
-        &state.config.theme,
-        &state.content,
-        is_mobile,
-    ) {
+    let bundle = match content::load(&state.config.content, slug.as_deref()) {
+        Ok(b) => b,
+        Err(err) => {
+            tracing::error!(error = ?err, "failed to load content");
+            return (StatusCode::NOT_FOUND, "article not found").into_response();
+        }
+    };
+
+    match render::render_index(&state.config.site, &state.config.theme, &bundle, is_mobile) {
         Ok(html) => Html(html).into_response(),
         Err(err) => {
             tracing::error!(error = ?err, "failed to render index");
@@ -77,17 +98,6 @@ async fn health_handler() -> &'static str {
 
 // ---------- Mobile detection ----------
 
-/// Returns `true` when the `User-Agent` header looks like a mobile device.
-///
-/// Detection criteria (any one match → mobile):
-/// - Contains "Mobile" (covers Android Chrome, Firefox for Android, etc.)
-/// - Contains "Android" without "Tablet"
-/// - Contains "iPhone" or "iPod"
-/// - Contains "BlackBerry", "IEMobile", or "Opera Mini"
-///
-/// Tablets (iPad, Android Tablet) are treated as desktop by default so they
-/// get the full three-column layout; the client-side JS will switch them to
-/// mobile if their viewport is actually narrow.
 fn detect_mobile(headers: &HeaderMap) -> bool {
     let ua = headers
         .get("user-agent")
@@ -98,8 +108,6 @@ fn detect_mobile(headers: &HeaderMap) -> bool {
         return false;
     }
 
-    // Fast path: the word "Mobile" is the most reliable signal.
-    // Android tablets send "Android" but NOT "Mobile"; phones send both.
     let is_mobile_keyword = ua.contains("Mobile")
         || ua.contains("iPhone")
         || ua.contains("iPod")
@@ -140,7 +148,6 @@ mod tests {
 
     #[test]
     fn test_android_tablet_is_desktop() {
-        // Android tablets omit "Mobile" from their UA string
         let ua = "Mozilla/5.0 (Linux; Android 13; SM-X700) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36";
         assert!(!detect_mobile(&ua_headers(ua)));
     }

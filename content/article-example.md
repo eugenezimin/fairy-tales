@@ -1,6 +1,6 @@
 +++
 title     = "The Art of the Rust Web Server"
-slug      = "art-of-rust-web-server"
+slug      = "art-of-rust-web-server-md"
 author    = "Ada Ferrous"
 published = "2026-05-02"
 +++

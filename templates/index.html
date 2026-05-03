@@ -33,13 +33,22 @@
         .toc__item--h4 .toc__link { font-size: 0.82rem; }
         .toc__item--h3 .toc__link::before,
         .toc__item--h4 .toc__link::before { content: ""; }
+
+        /* Highlight the active story in the sidebar */
+        .story-list__item--active .story-list__title {
+            color: var(--color-accent);
+        }
+        .story-list__item--active {
+            border-left: 2px solid var(--color-accent);
+            padding-left: calc(0.75rem - 2px);
+        }
     </style>
 </head>
 <body data-server-mobile="{{ is_mobile }}"{% if is_mobile %} class="is-mobile"{% endif %}>
 
     <header class="site-header">
         <div class="site-header__inner">
-            <h1 class="site-header__title">{{ site_title }}</h1>
+            <h1 class="site-header__title"><a href="/" style="color:inherit;text-decoration:none;">{{ site_title }}</a></h1>
             <nav class="site-header__nav" id="main-nav">
                 <a href="/">Home</a>
                 <a href="#">Articles</a>
@@ -57,18 +66,24 @@
 
     <main class="layout">
 
-        <aside class="layout__left" aria-label="Random stories">
-            <h2 class="column-title">Random stories</h2>
-            <ul class="story-list">
-                {% for story in stories %}
-                <li class="story-list__item">
-                    <a href="#" class="story-list__link">
-                        <span class="story-list__title">{{ story.title }}</span>
-                        <span class="story-list__snippet">{{ story.snippet }}</span>
-                    </a>
-                </li>
-                {% endfor %}
-            </ul>
+        <aside class="layout__left" aria-label="Stories">
+            <section class="current-story">
+                <h2 class="column-title">Current story</h2>
+                <p class="current-story__title">{{ page_title }}</p>
+            </section>
+            <section class="random-stories">
+                <h2 class="column-title">Random stories</h2>
+                <ul class="story-list">
+                    {% for story in stories %}
+                    <li class="story-list__item">
+                        <a href="#" class="story-list__link">
+                            <span class="story-list__title">{{ story.title }}</span>
+                            <span class="story-list__snippet">{{ story.snippet }}</span>
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </section>
         </aside>
 
         <article class="layout__main">

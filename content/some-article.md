@@ -1,5 +1,6 @@
 +++
 title     = "26.04.24 - review ADR-001.09 & ADR-001.11"
+slug      = "review-ADR"
 published = "2026-05-02"
 +++
 

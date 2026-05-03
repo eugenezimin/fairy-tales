@@ -2,10 +2,6 @@
 //!
 //! View models (what the template actually sees) and the rendering function
 //! that turns a `ContentBundle` + site config into a finished HTML string.
-//!
-//! All view types use plain structs with a discriminant string so the
-//! Askama template can use simple `{% if %}` checks rather than `{% match %}`,
-//! which avoids any edge-cases in Askama's enum-match support.
 
 use anyhow::{Context, Result};
 use askama::Template;
@@ -83,24 +79,20 @@ impl InlineView {
     }
 }
 
-/// A paragraph — just the list of inline spans.
 #[derive(Clone)]
 pub struct ParagraphView {
     pub inlines: Vec<InlineView>,
 }
 
-/// A section as seen by the template.
 /// `kind` is one of: "heading" | "paragraphs" | "ad"
-/// `level` is one of: "h2" | "h3" | "h4" (only meaningful for kind="heading")
+/// `level` is one of: "h2" | "h3" | "h4"
 #[derive(Clone)]
 pub struct SectionView {
     pub kind: String,
     pub id: String,
-    // heading / paragraphs
     pub heading: String,
     pub level: String,
     pub paragraphs: Vec<ParagraphView>,
-    // ad
     pub slot: String,
 }
 
@@ -109,6 +101,8 @@ pub struct SectionView {
 struct IndexView {
     site_title: String,
     page_title: String,
+    /// Slug of the article being displayed — used to highlight the active sidebar card.
+    article_slug: String,
     theme: String,
     stories: Vec<StoryHeader>,
     toc: Vec<TocEntry>,
@@ -131,6 +125,7 @@ pub fn render_index(
     let view = IndexView {
         site_title: site.title.clone(),
         page_title: bundle.article.title.clone(),
+        article_slug: bundle.article.slug.clone(),
         theme: theme.name.clone(),
         stories: bundle.stories.clone(),
         toc,
