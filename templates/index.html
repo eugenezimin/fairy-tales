@@ -9,16 +9,33 @@
     <link rel="stylesheet" href="/static/css/base.css">
     <!-- Theme is selected from config.toml -->
     <link rel="stylesheet" href="/static/css/theme-{{ theme }}.css">
+    <!-- Mobile overrides (always loaded; activated by .is-mobile on body) -->
+    <link rel="stylesheet" href="/static/css/mobile.css">
 </head>
-<body>
+<!--
+    data-mobile="{{ is_mobile }}" is set by the server from User-Agent detection.
+    JS will add/remove the .is-mobile class based on actual viewport width,
+    overriding the server hint when necessary (e.g. tablet in landscape, desktop
+    browser with narrow window, etc.).
+-->
+<body data-server-mobile="{{ is_mobile }}"{% if is_mobile %} class="is-mobile"{% endif %}>
+
     <header class="site-header">
         <div class="site-header__inner">
             <h1 class="site-header__title">{{ site_title }}</h1>
-            <nav class="site-header__nav">
+            <nav class="site-header__nav" id="main-nav">
                 <a href="/">Home</a>
                 <a href="#">Articles</a>
                 <a href="#">About</a>
             </nav>
+            <!-- Hamburger button: injected by JS when in mobile mode -->
+            <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle navigation" aria-expanded="false" aria-controls="main-nav">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <line x1="3" y1="6"  x2="21" y2="6"  class="bar bar-1"/>
+                    <line x1="3" y1="12" x2="21" y2="12" class="bar bar-2"/>
+                    <line x1="3" y1="18" x2="21" y2="18" class="bar bar-3"/>
+                </svg>
+            </button>
         </div>
     </header>
 
@@ -50,9 +67,11 @@
         </article>
 
         <aside class="layout__right" aria-label="Table of contents">
-            <h2 class="column-title">Contents</h2>
+            <h2 class="column-title toc-toggle" id="toc-toggle" role="button" tabindex="0" aria-expanded="false" aria-controls="toc-list">
+                Contents
+            </h2>
             <nav class="toc">
-                <ol class="toc__list">
+                <ol class="toc__list" id="toc-list">
                     {% for entry in toc %}
                     <li class="toc__item">
                         <a class="toc__link" href="#{{ entry.anchor }}">{{ entry.label }}</a>
@@ -68,5 +87,185 @@
             <p>&copy; {{ year }} {{ site_title }}. Rendered with Rust.</p>
         </div>
     </footer>
+
+    <!-- View-switcher button: appears when server hint and viewport disagree -->
+    <button class="view-switcher" id="view-switcher" aria-label="Switch view"></button>
+
+    <script>
+    (function () {
+        'use strict';
+
+        // ── Constants ────────────────────────────────────────────────
+        var MOBILE_BREAKPOINT = 768; // px — matches your CSS media query
+        var UA_MOBILE_KEY     = 'fa-view-override'; // localStorage key
+        var body              = document.body;
+        var switcher          = document.getElementById('view-switcher');
+        var hamburgerBtn      = document.getElementById('hamburger-btn');
+        var nav               = document.getElementById('main-nav');
+        var tocToggle         = document.getElementById('toc-toggle');
+        var tocList           = document.getElementById('toc-list');
+
+        // Server's initial assessment (true | false as string)
+        var serverSaidMobile = body.dataset.serverMobile === 'true';
+
+        // ── Determine "is mobile" ─────────────────────────────────────
+        // Priority:  user override (localStorage)  →  viewport width
+        function viewportIsMobile() {
+            return window.innerWidth <= MOBILE_BREAKPOINT;
+        }
+
+        function getSavedOverride() {
+            try { return localStorage.getItem(UA_MOBILE_KEY); } catch (e) { return null; }
+        }
+
+        function setSavedOverride(val) {
+            try { localStorage.setItem(UA_MOBILE_KEY, val); } catch (e) {}
+        }
+
+        function clearSavedOverride() {
+            try { localStorage.removeItem(UA_MOBILE_KEY); } catch (e) {}
+        }
+
+        // ── Apply / remove mobile mode ────────────────────────────────
+        function applyMobile(on) {
+            if (on) {
+                body.classList.add('is-mobile');
+            } else {
+                body.classList.remove('is-mobile');
+            }
+            updateSwitcherLabel(on);
+            updateHamburger();
+            updateToc();
+        }
+
+        // ── View-switcher button ──────────────────────────────────────
+        // Only show when the server's UA guess and the current viewport disagree,
+        // OR when the user has already exercised a manual override.
+        function shouldShowSwitcher() {
+            var override = getSavedOverride();
+            if (override !== null) return true;          // user already overrode once
+            return serverSaidMobile !== viewportIsMobile(); // UA vs viewport mismatch
+        }
+
+        function updateSwitcherLabel(isMobile) {
+            switcher.textContent = isMobile ? '🖥  Desktop view' : '📱  Mobile view';
+            if (shouldShowSwitcher()) {
+                body.classList.add('show-switcher');
+            } else {
+                body.classList.remove('show-switcher');
+            }
+        }
+
+        switcher.addEventListener('click', function () {
+            var currently = body.classList.contains('is-mobile');
+            var next      = !currently;
+            setSavedOverride(next ? 'mobile' : 'desktop');
+            applyMobile(next);
+        });
+
+        // ── Hamburger ─────────────────────────────────────────────────
+        function updateHamburger() {
+            var isMobile = body.classList.contains('is-mobile');
+            hamburgerBtn.style.display = isMobile ? '' : '';
+            // Reset open state when switching modes
+            if (!isMobile) {
+                nav.classList.remove('is-open');
+                hamburgerBtn.setAttribute('aria-expanded', 'false');
+            }
+        }
+
+        hamburgerBtn.addEventListener('click', function () {
+            var isOpen = nav.classList.toggle('is-open');
+            hamburgerBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        });
+
+        // ── TOC collapse (mobile only) ────────────────────────────────
+        function updateToc() {
+            var isMobile = body.classList.contains('is-mobile');
+            if (!isMobile) {
+                // Always fully visible on desktop
+                tocList.classList.add('is-open');
+                tocToggle.classList.remove('is-open');
+            }
+        }
+
+        tocToggle.addEventListener('click', function () {
+            var isMobile = body.classList.contains('is-mobile');
+            if (!isMobile) return;
+            var isOpen = tocList.classList.toggle('is-open');
+            tocToggle.classList.toggle('is-open', isOpen);
+            tocToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        });
+
+        tocToggle.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                tocToggle.click();
+            }
+        });
+
+        // ── Responsive recalculation on resize / orientation change ───
+        var resizeTimer;
+        function onResize() {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(function () {
+                var override = getSavedOverride();
+
+                if (override !== null) {
+                    // User explicitly chose; respect it but update switcher label
+                    updateSwitcherLabel(body.classList.contains('is-mobile'));
+                    return;
+                }
+
+                // No manual override: follow viewport
+                var wantMobile = viewportIsMobile();
+                var isMobile   = body.classList.contains('is-mobile');
+                if (wantMobile !== isMobile) {
+                    applyMobile(wantMobile);
+                }
+
+                // If viewport now agrees with server, hide switcher
+                if (wantMobile === serverSaidMobile) {
+                    clearSavedOverride();
+                    body.classList.remove('show-switcher');
+                }
+            }, 100);
+        }
+
+        window.addEventListener('resize', onResize);
+        window.addEventListener('orientationchange', onResize);
+
+        // ── Boot ──────────────────────────────────────────────────────
+        (function init() {
+            var override = getSavedOverride();
+
+            var isMobile;
+            if (override !== null) {
+                // Respect saved user preference over server/viewport
+                isMobile = (override === 'mobile');
+            } else if (viewportIsMobile()) {
+                // Viewport says mobile regardless of UA
+                isMobile = true;
+            } else {
+                // Trust server UA detection for wide viewports
+                isMobile = serverSaidMobile;
+            }
+
+            // Apply without transition flash (body already has class if server said mobile)
+            if (isMobile !== body.classList.contains('is-mobile')) {
+                applyMobile(isMobile);
+            } else {
+                updateSwitcherLabel(isMobile);
+                updateHamburger();
+                updateToc();
+            }
+
+            // On desktop, TOC should start open
+            if (!isMobile) {
+                tocList.classList.add('is-open');
+            }
+        })();
+    })();
+    </script>
 </body>
 </html>

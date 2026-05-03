@@ -29,6 +29,10 @@ struct IndexView {
     toc: Vec<TocEntry>,
     sections: Vec<Section>,
     year: u16,
+    /// True when the request came from a mobile User-Agent.
+    /// Used to pre-apply .is-mobile on the server so there's no
+    /// layout flash before JS runs.
+    is_mobile: bool,
 }
 
 // ---------- Rendering ----------
@@ -37,6 +41,7 @@ pub fn render_index(
     site: &SiteConfig,
     theme: &ThemeConfig,
     bundle: &ContentBundle,
+    is_mobile: bool,
 ) -> Result<String> {
     let toc = build_toc(&bundle.article.sections);
 
@@ -48,6 +53,7 @@ pub fn render_index(
         toc,
         sections: bundle.article.sections.clone(),
         year: site.footer_year,
+        is_mobile,
     };
 
     view.render().context("rendering index template")
