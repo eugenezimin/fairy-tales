@@ -135,43 +135,7 @@ async fn list_articles_handler(State(state): State<AppState>, jar: CookieJar) ->
     if !is_admin_session(&state, &jar) {
         return (StatusCode::UNAUTHORIZED, "unauthorized").into_response();
     }
-
-    let dir = &state.config.content.dir;
-    let entries = match std::fs::read_dir(dir) {
-        Ok(e) => e,
-        Err(_) => {
-            return (StatusCode::INTERNAL_SERVER_ERROR, "cannot read content dir").into_response();
-        }
-    };
-
-    let mut items = String::new();
-    let mut slugs: Vec<String> = entries
-        .flatten()
-        .filter_map(|e| {
-            let p = e.path();
-            if p.extension()?.to_str()? == "md" {
-                Some(p.file_stem()?.to_str()?.to_string())
-            } else {
-                None
-            }
-        })
-        .collect();
-    slugs.sort();
-
-    for slug in &slugs {
-        items.push_str(&format!(r#"<li><a href="/article/{slug}">{slug}</a></li>"#,));
-    }
-
-    let html = format!(
-        r#"<!DOCTYPE html><html><head><meta charset="UTF-8">
-<title>All Articles</title>
-<style>body{{font-family:system-ui;max-width:600px;margin:3rem auto;padding:0 1rem}}
-a{{color:#c0392b}}li{{margin:.4rem 0}}h1{{margin-bottom:1.5rem}}</style></head>
-<body><h1>All Articles</h1><ul>{items}</ul>
-<p style="margin-top:2rem"><a href="/">← Back</a></p></body></html>"#
-    );
-
-    Html(html).into_response()
+    Redirect::to("/admin").into_response()
 }
 
 async fn upload_article_handler(
@@ -213,6 +177,8 @@ async fn admin_list_handler(State(state): State<AppState>, jar: CookieJar) -> im
     #[template(path = "admin.html")]
     struct AdminView {
         site_title: String,
+        theme: String,
+        year: u16,
         articles: Vec<AdminArticleEntry>,
     }
 
@@ -260,6 +226,8 @@ async fn admin_list_handler(State(state): State<AppState>, jar: CookieJar) -> im
 
     match (AdminView {
         site_title: state.config.site.title.clone(),
+        theme: state.config.theme.name.clone(),
+        year: state.config.site.footer_year,
         articles,
     }
     .render())
