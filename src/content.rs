@@ -526,7 +526,105 @@ fn parse_block(events: &[Event<'_>]) -> (Option<Block>, usize) {
 
         Event::Rule => (Some(Block::Rule), 1),
 
-        // Skip soft/hard breaks at block level, end-tags that bubble up, etc.
+        // Tight-list text nodes: pulldown-cmark emits Text/Code/etc. directly
+        // inside Item (no Paragraph wrapper). Collect a run of inline events
+        // until we hit a block-level start or an end tag.
+        Event::Text(_)
+        | Event::Code(_)
+        | Event::SoftBreak
+        | Event::HardBreak
+        | Event::Start(Tag::Strong)
+        | Event::Start(Tag::Emphasis)
+        | Event::Start(Tag::Link { .. })
+        | Event::Start(Tag::Image { .. }) => {
+            let mut inlines: Vec<Inline> = Vec::new();
+            let mut pos = 0;
+            let mut stack: Vec<Vec<Inline>> = vec![Vec::new()];
+            let mut link_meta: Vec<(String, String)> = Vec::new();
+            let mut img_meta: Vec<(String, String)> = Vec::new();
+
+            while pos < events.len() {
+                match &events[pos] {
+                    Event::Start(Tag::Paragraph)
+                    | Event::Start(Tag::Heading { .. })
+                    | Event::Start(Tag::List(_))
+                    | Event::Start(Tag::BlockQuote(_))
+                    | Event::Start(Tag::CodeBlock(_))
+                    | Event::Start(Tag::Table(_))
+                    | Event::Rule
+                    | Event::End(_) => break,
+
+                    Event::Text(t) => {
+                        stack.last_mut().unwrap().push(Inline::Text(t.to_string()));
+                    }
+                    Event::Code(t) => {
+                        stack.last_mut().unwrap().push(Inline::Code(t.to_string()));
+                    }
+                    Event::SoftBreak => {
+                        stack.last_mut().unwrap().push(Inline::SoftBreak);
+                    }
+                    Event::HardBreak => {
+                        stack.last_mut().unwrap().push(Inline::HardBreak);
+                    }
+                    Event::Html(h) | Event::InlineHtml(h) => {
+                        stack.last_mut().unwrap().push(Inline::Text(h.to_string()));
+                    }
+                    Event::Start(Tag::Strong) | Event::Start(Tag::Emphasis) => {
+                        stack.push(Vec::new());
+                    }
+                    Event::End(TagEnd::Strong) => {
+                        let ch = stack.pop().unwrap_or_default();
+                        stack.last_mut().unwrap().push(Inline::Strong(ch));
+                    }
+                    Event::End(TagEnd::Emphasis) => {
+                        let ch = stack.pop().unwrap_or_default();
+                        stack.last_mut().unwrap().push(Inline::Em(ch));
+                    }
+                    Event::Start(Tag::Link {
+                        dest_url, title, ..
+                    }) => {
+                        link_meta.push((dest_url.to_string(), title.to_string()));
+                        stack.push(Vec::new());
+                    }
+                    Event::End(TagEnd::Link) => {
+                        let children = stack.pop().unwrap_or_default();
+                        let (href, lt) = link_meta.pop().unwrap_or_default();
+                        stack.last_mut().unwrap().push(Inline::Link {
+                            href,
+                            title: lt,
+                            children,
+                        });
+                    }
+                    Event::Start(Tag::Image {
+                        dest_url, title, ..
+                    }) => {
+                        img_meta.push((dest_url.to_string(), title.to_string()));
+                        stack.push(Vec::new());
+                    }
+                    Event::End(TagEnd::Image) => {
+                        let alt_inlines = stack.pop().unwrap_or_default();
+                        let alt = inlines_to_plain_text(&alt_inlines);
+                        let (src, img_title) = img_meta.pop().unwrap_or_default();
+                        stack.last_mut().unwrap().push(Inline::Image {
+                            src,
+                            alt,
+                            title: img_title,
+                        });
+                    }
+                    _ => {}
+                }
+                pos += 1;
+            }
+
+            inlines = stack.pop().unwrap_or_default();
+            if inlines.is_empty() {
+                (None, pos)
+            } else {
+                (Some(Block::Paragraph(inlines)), pos)
+            }
+        }
+
+        // Skip end-tags that bubble up, blank lines, etc.
         _ => (None, 1),
     }
 }
