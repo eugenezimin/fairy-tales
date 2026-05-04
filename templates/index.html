@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="{{ theme }}">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,62 +11,108 @@
     <link rel="stylesheet" href="/static/css/mobile.css">
 
     <style>
-        .article__img--right  { float: right; margin: 0 0 1rem 1.5rem; max-width: 40%; border-radius: var(--radius); }
-        .article__img--left   { float: left;  margin: 0 1.5rem 1rem 0; max-width: 40%; border-radius: var(--radius); }
-        .article__img--center { display: block; margin: 1rem auto; max-width: 100%; border-radius: var(--radius); }
+        .article__img--right {
+            float: right;
+            margin: 0 0 1rem 1.5rem;
+            max-width: 40%;
+            border-radius: var(--radius);
+        }
+
+        .article__img--left {
+            float: left;
+            margin: 0 1.5rem 1rem 0;
+            max-width: 40%;
+            border-radius: var(--radius);
+        }
+
+        .article__img--center {
+            display: block;
+            margin: 1rem auto;
+            max-width: 100%;
+            border-radius: var(--radius);
+        }
+
         .article__ad {
-            background: var(--color-hover); border: 1px dashed var(--color-border);
-            border-radius: var(--radius); padding: 1rem; text-align: center;
-            font-size: 0.85rem; color: var(--color-muted); margin: 1.5rem 0;
+            background: var(--color-hover);
+            border: 1px dashed var(--color-border);
+            border-radius: var(--radius);
+            padding: 1rem;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--color-muted);
+            margin: 1.5rem 0;
         }
+
         .article__heading--h3 {
-            font-family: var(--font-heading, Georgia, serif); font-size: 1.15rem;
-            font-weight: 700; margin-bottom: 0.6rem; color: var(--color-text);
+            font-family: var(--font-heading, Georgia, serif);
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 0.6rem;
+            color: var(--color-text);
         }
+
         .article__heading--h4 {
-            font-family: var(--font-body, system-ui); font-size: 1rem;
-            font-weight: 700; margin-bottom: 0.5rem; color: var(--color-muted);
-            text-transform: uppercase; letter-spacing: 0.04em;
+            font-family: var(--font-body, system-ui);
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--color-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
         }
-        .toc__item--h3 { padding-left: 0.8rem; }
-        .toc__item--h4 { padding-left: 1.6rem; }
+
+        .toc__item--h3 {
+            padding-left: 0.8rem;
+        }
+
+        .toc__item--h4 {
+            padding-left: 1.6rem;
+        }
+
         .toc__item--h3 .toc__link,
-        .toc__item--h4 .toc__link { font-size: 0.82rem; }
+        .toc__item--h4 .toc__link {
+            font-size: 0.82rem;
+        }
+
         .toc__item--h3 .toc__link::before,
-        .toc__item--h4 .toc__link::before { content: ""; }
+        .toc__item--h4 .toc__link::before {
+            content: "";
+        }
 
         /* Highlight the active story in the sidebar */
         .story-list__item--active .story-list__title {
             color: var(--color-accent);
         }
+
         .story-list__item--active {
             border-left: 2px solid var(--color-accent);
             padding-left: calc(0.75rem - 2px);
         }
     </style>
 </head>
-<body data-server-mobile="{{ is_mobile }}"{% if is_mobile %} class="is-mobile"{% endif %}>
+
+<body data-server-mobile="{{ is_mobile }}" {% if is_mobile %} class="is-mobile" {% endif %}>
 
     <header class="site-header">
         <div class="site-header__inner">
-            <h1 class="site-header__title"><a href="/" style="color:inherit;text-decoration:none;">{{ site_title }}</a></h1>
+            <h1 class="site-header__title"><a href="/" style="color:inherit;text-decoration:none;">{{ site_title }}</a>
+            </h1>
             <nav class="site-header__nav" id="main-nav">
-                <a href="/">Home</a>
-                <a href="#">Articles</a>
                 <a href="#">About</a>
             </nav>
-            <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle navigation" aria-expanded="false" aria-controls="main-nav">
+            <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle navigation" aria-expanded="false"
+                aria-controls="main-nav">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <line x1="3" y1="6"  x2="21" y2="6"/>
-                    <line x1="3" y1="12" x2="21" y2="12"/>
-                    <line x1="3" y1="18" x2="21" y2="18"/>
+                    <line x1="3" y1="6" x2="21" y2="6" />
+                    <line x1="3" y1="12" x2="21" y2="12" />
+                    <line x1="3" y1="18" x2="21" y2="18" />
                 </svg>
             </button>
         </div>
     </header>
 
     <main class="layout">
-        <aside class="layout__left" aria-label="Current Story">
+        <!-- <aside class="layout__left" aria-label="Current Story">
             <section class="current-story">
                 <h2 class="column-title">Current story</h2>
                 <ul class="story-list">
@@ -76,8 +123,8 @@
                     </li>
                 </ul>
             </section>
-        </aside>
-        <aside class="layout__left" aria-label="Other Stories">        
+        </aside> -->
+        <aside class="layout__left" aria-label="Other Stories">
             <section class="random-stories">
                 <h2 class="column-title">Other stories</h2>
                 <ul class="story-list">
@@ -99,65 +146,163 @@
             {% for section in sections %}
             {% if section.has_heading %}
             <section class="article__section">
-                <h{{ section.heading_level }} class="article__heading" id="{{ section.heading_id }}">{{ section.heading_text }}</h{{ section.heading_level }}>
-            {% else %}
-            <section class="article__section">
-            {% endif %}
-
-            {% for block in section.blocks %}
-                {% if block.kind == "ad" %}
-                <div class="article__ad" data-slot="{{ block.slot }}">[ Advertisement: {{ block.slot }} ]</div>
-
-                {% else if block.kind == "rule" %}
-                <hr class="article__rule">
-
-                {% else if block.kind == "code" %}
-                <pre class="article__pre"><code{% if block.lang != "" %} class="language-{{ block.lang }}"{% endif %}>{{ block.code }}</code></pre>
-
-                {% else if block.kind == "list" %}
-                {% if block.ordered %}<ol class="article__list article__list--ordered">{% else %}<ul class="article__list">{% endif %}
-                {% for item in block.items %}
-                    <li class="article__list-item">
-                    {% for ib in item.blocks %}
-                        {% if ib.kind == "paragraph" %}
-                        <span>{% for inline in ib.inlines %}{% if inline.kind == "image" %}<img src="{{ inline.src }}" alt="{{ inline.alt }}" class="article__img">{% else if inline.kind == "link" %}<a href="{{ inline.href }}">{% for child in inline.children %}{% if child.kind == "text" %}{{ child.text }}{% else if child.kind == "code" %}<code>{{ child.text }}</code>{% else if child.kind == "strong" %}<strong>{% for gc in child.children %}{% if gc.kind == "text" %}{{ gc.text }}{% endif %}{% endfor %}</strong>{% else if child.kind == "em" %}<em>{% for gc in child.children %}{% if gc.kind == "text" %}{{ gc.text }}{% endif %}{% endfor %}</em>{% else if child.kind == "softbreak" %} {% else if child.kind == "hardbreak" %}<br>{% endif %}{% endfor %}</a>{% else if inline.kind == "strong" %}<strong>{% for child in inline.children %}{% if child.kind == "text" %}{{ child.text }}{% else if child.kind == "em" %}<em>{% for gc in child.children %}{% if gc.kind == "text" %}{{ gc.text }}{% endif %}{% endfor %}</em>{% else if child.kind == "softbreak" %} {% else if child.kind == "hardbreak" %}<br>{% endif %}{% endfor %}</strong>{% else if inline.kind == "em" %}<em>{% for child in inline.children %}{% if child.kind == "text" %}{{ child.text }}{% else if child.kind == "softbreak" %} {% else if child.kind == "hardbreak" %}<br>{% endif %}{% endfor %}</em>{% else if inline.kind == "code" %}<code>{{ inline.text }}</code>{% else if inline.kind == "softbreak" %} {% else if inline.kind == "hardbreak" %}<br>{% else %}{{ inline.text }}{% endif %}{% endfor %}</span>
-                        {% else if ib.kind == "list" %}
-                        {% if ib.ordered %}<ol class="article__list article__list--ordered">{% else %}<ul class="article__list">{% endif %}
-                        {% for subitem in ib.items %}<li class="article__list-item">{% for sib in subitem.blocks %}{% if sib.kind == "paragraph" %}{% for inline in sib.inlines %}{% if inline.kind == "text" %}{{ inline.text }}{% else if inline.kind == "softbreak" %} {% else if inline.kind == "hardbreak" %}<br>{% else if inline.kind == "code" %}<code>{{ inline.text }}</code>{% else if inline.kind == "strong" %}<strong>{% for c in inline.children %}{% if c.kind == "text" %}{{ c.text }}{% endif %}{% endfor %}</strong>{% else if inline.kind == "em" %}<em>{% for c in inline.children %}{% if c.kind == "text" %}{{ c.text }}{% endif %}{% endfor %}</em>{% else if inline.kind == "link" %}<a href="{{ inline.href }}">{% for c in inline.children %}{% if c.kind == "text" %}{{ c.text }}{% endif %}{% endfor %}</a>{% endif %}{% endfor %}{% endif %}{% endfor %}</li>{% endfor %}
-                        {% if ib.ordered %}</ol>{% else %}</ul>{% endif %}
-                        {% endif %}
-                    {% endfor %}
-                    </li>
-                {% endfor %}
-                {% if block.ordered %}</ol>{% else %}</ul>{% endif %}
-
-                {% else if block.kind == "table" %}
-                <div class="article__table-wrap">
-                <table class="article__table">
-                    <thead><tr>{% for cell in block.headers %}<th>{% for inline in cell %}{% if inline.kind == "text" %}{{ inline.text }}{% else if inline.kind == "strong" %}<strong>{% for c in inline.children %}{% if c.kind == "text" %}{{ c.text }}{% endif %}{% endfor %}</strong>{% else if inline.kind == "code" %}<code>{{ inline.text }}</code>{% endif %}{% endfor %}</th>{% endfor %}</tr></thead>
-                    <tbody>
-                    {% for row in block.rows %}
-                    <tr>{% for cell in row %}<td>{% for inline in cell %}{% if inline.kind == "text" %}{{ inline.text }}{% else if inline.kind == "code" %}<code>{{ inline.text }}</code>{% else if inline.kind == "strong" %}<strong>{% for c in inline.children %}{% if c.kind == "text" %}{{ c.text }}{% endif %}{% endfor %}</strong>{% else if inline.kind == "em" %}<em>{% for c in inline.children %}{% if c.kind == "text" %}{{ c.text }}{% endif %}{% endfor %}</em>{% else if inline.kind == "link" %}<a href="{{ inline.href }}">{% for c in inline.children %}{% if c.kind == "text" %}{{ c.text }}{% endif %}{% endfor %}</a>{% else if inline.kind == "softbreak" %} {% endif %}{% endfor %}</td>{% endfor %}</tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-                </div>
-
-                {% else if block.kind == "blockquote" %}
-                <blockquote class="article__blockquote">
-                    {% for child in block.children %}{% if child.kind == "paragraph" %}<p>{% for inline in child.inlines %}{% if inline.kind == "text" %}{{ inline.text }}{% else if inline.kind == "softbreak" %} {% else if inline.kind == "code" %}<code>{{ inline.text }}</code>{% else if inline.kind == "strong" %}<strong>{% for c in inline.children %}{% if c.kind == "text" %}{{ c.text }}{% endif %}{% endfor %}</strong>{% else if inline.kind == "em" %}<em>{% for c in inline.children %}{% if c.kind == "text" %}{{ c.text }}{% endif %}{% endfor %}</em>{% endif %}{% endfor %}</p>{% endif %}{% endfor %}
-                </blockquote>
-
+                <h{{ section.heading_level }} class="article__heading" id="{{ section.heading_id }}">{{
+                    section.heading_text }}</h{{ section.heading_level }}>
                 {% else %}
-                <p class="article__paragraph">{% for inline in block.inlines %}{% if inline.kind == "image" %}<img src="{{ inline.src }}" alt="{{ inline.alt }}" title="{{ inline.img_title }}" class="article__img">{% else if inline.kind == "link" %}<a href="{{ inline.href }}"{% if inline.link_title != "" %} title="{{ inline.link_title }}"{% endif %}>{% for child in inline.children %}{% if child.kind == "text" %}{{ child.text }}{% else if child.kind == "code" %}<code>{{ child.text }}</code>{% else if child.kind == "strong" %}<strong>{% for gc in child.children %}{% if gc.kind == "text" %}{{ gc.text }}{% endif %}{% endfor %}</strong>{% else if child.kind == "em" %}<em>{% for gc in child.children %}{% if gc.kind == "text" %}{{ gc.text }}{% endif %}{% endfor %}</em>{% else if child.kind == "softbreak" %} {% else if child.kind == "hardbreak" %}<br>{% endif %}{% endfor %}</a>{% else if inline.kind == "strong" %}<strong>{% for child in inline.children %}{% if child.kind == "text" %}{{ child.text }}{% else if child.kind == "code" %}<code>{{ child.text }}</code>{% else if child.kind == "em" %}<em>{% for gc in child.children %}{% if gc.kind == "text" %}{{ gc.text }}{% endif %}{% endfor %}</em>{% else if child.kind == "softbreak" %} {% else if child.kind == "hardbreak" %}<br>{% endif %}{% endfor %}</strong>{% else if inline.kind == "em" %}<em>{% for child in inline.children %}{% if child.kind == "text" %}{{ child.text }}{% else if child.kind == "code" %}<code>{{ child.text }}</code>{% else if child.kind == "strong" %}<strong>{% for gc in child.children %}{% if gc.kind == "text" %}{{ gc.text }}{% endif %}{% endfor %}</strong>{% else if child.kind == "softbreak" %} {% else if child.kind == "hardbreak" %}<br>{% endif %}{% endfor %}</em>{% else if inline.kind == "code" %}<code>{{ inline.text }}</code>{% else if inline.kind == "softbreak" %} {% else if inline.kind == "hardbreak" %}<br>{% else %}{{ inline.text }}{% endif %}{% endfor %}</p>
-                {% endif %}
-            {% endfor %}
-            </section>
-            {% endfor %}
+                <section class="article__section">
+                    {% endif %}
+
+                    {% for block in section.blocks %}
+                    {% if block.kind == "ad" %}
+                    <div class="article__ad" data-slot="{{ block.slot }}">[ Advertisement: {{ block.slot }} ]</div>
+
+                    {% else if block.kind == "rule" %}
+                    <hr class="article__rule">
+
+                    {% else if block.kind == "code" %}
+                    <pre
+                        class="article__pre"><code{% if block.lang != "" %} class="language-{{ block.lang }}"{% endif %}>{{ block.code }}</code></pre>
+
+                    {% else if block.kind == "list" %}
+                    {% if block.ordered %}<ol class="article__list article__list--ordered">{% else %}<ul
+                            class="article__list">{% endif %}
+                            {% for item in block.items %}
+                            <li class="article__list-item">
+                                {% for ib in item.blocks %}
+                                {% if ib.kind == "paragraph" %}
+                                <span>{% for inline in ib.inlines %}{% if inline.kind == "image" %}<img
+                                        src="{{ inline.src }}" alt="{{ inline.alt }}" class="article__img">{% else if
+                                    inline.kind == "link" %}<a href="{{ inline.href }}">{% for child in inline.children
+                                        %}{% if child.kind == "text" %}{{ child.text }}{% else if child.kind == "code"
+                                        %}<code>{{ child.text }}</code>{% else if child.kind == "strong" %}<strong>{%
+                                            for gc in child.children %}{% if gc.kind == "text" %}{{ gc.text }}{% endif
+                                            %}{% endfor %}</strong>{% else if child.kind == "em" %}<em>{% for gc in
+                                            child.children %}{% if gc.kind == "text" %}{{ gc.text }}{% endif %}{% endfor
+                                            %}</em>{% else if child.kind == "softbreak" %} {% else if child.kind ==
+                                        "hardbreak" %}<br>{% endif %}{% endfor %}</a>{% else if inline.kind == "strong"
+                                    %}<strong>{% for child in inline.children %}{% if child.kind == "text" %}{{
+                                        child.text }}{% else if child.kind == "em" %}<em>{% for gc in child.children
+                                            %}{% if gc.kind == "text" %}{{ gc.text }}{% endif %}{% endfor %}</em>{% else
+                                        if child.kind == "softbreak" %} {% else if child.kind == "hardbreak" %}<br>{%
+                                        endif %}{% endfor %}</strong>{% else if inline.kind == "em" %}<em>{% for child
+                                        in inline.children %}{% if child.kind == "text" %}{{ child.text }}{% else if
+                                        child.kind == "softbreak" %} {% else if child.kind == "hardbreak" %}<br>{% endif
+                                        %}{% endfor %}</em>{% else if inline.kind == "code"
+                                    %}<code>{{ inline.text }}</code>{% else if inline.kind == "softbreak" %} {% else if
+                                    inline.kind == "hardbreak" %}<br>{% else %}{{ inline.text }}{% endif %}{% endfor
+                                    %}</span>
+                                {% else if ib.kind == "list" %}
+                                {% if ib.ordered %}<ol class="article__list article__list--ordered">{% else %}<ul
+                                        class="article__list">{% endif %}
+                                        {% for subitem in ib.items %}<li class="article__list-item">{% for sib in
+                                            subitem.blocks %}{% if sib.kind == "paragraph" %}{% for inline in
+                                            sib.inlines %}{% if inline.kind == "text" %}{{ inline.text }}{% else if
+                                            inline.kind == "softbreak" %} {% else if inline.kind == "hardbreak" %}<br>{%
+                                            else if inline.kind == "code" %}<code>{{ inline.text }}</code>{% else if
+                                            inline.kind == "strong" %}<strong>{% for c in inline.children %}{% if c.kind
+                                                == "text" %}{{ c.text }}{% endif %}{% endfor %}</strong>{% else if
+                                            inline.kind == "em" %}<em>{% for c in inline.children %}{% if c.kind ==
+                                                "text" %}{{ c.text }}{% endif %}{% endfor %}</em>{% else if inline.kind
+                                            == "link" %}<a href="{{ inline.href }}">{% for c in inline.children %}{% if
+                                                c.kind == "text" %}{{ c.text }}{% endif %}{% endfor %}</a>{% endif %}{%
+                                            endfor %}{% endif %}{% endfor %}</li>{% endfor %}
+                                        {% if ib.ordered %}</ol>{% else %}
+                        </ul>{% endif %}
+                        {% endif %}
+                        {% endfor %}
+                        </li>
+                        {% endfor %}
+                        {% if block.ordered %}</ol>{% else %}</ul>{% endif %}
+
+                    {% else if block.kind == "table" %}
+                    <div class="article__table-wrap">
+                        <table class="article__table">
+                            <thead>
+                                <tr>{% for cell in block.headers %}<th>{% for inline in cell %}{% if inline.kind ==
+                                        "text" %}{{ inline.text }}{% else if inline.kind == "strong" %}<strong>{% for c
+                                            in inline.children %}{% if c.kind == "text" %}{{ c.text }}{% endif %}{%
+                                            endfor %}</strong>{% else if inline.kind == "code"
+                                        %}<code>{{ inline.text }}</code>{% endif %}{% endfor %}</th>{% endfor %}</tr>
+                            </thead>
+                            <tbody>
+                                {% for row in block.rows %}
+                                <tr>{% for cell in row %}<td>{% for inline in cell %}{% if inline.kind == "text" %}{{
+                                        inline.text }}{% else if inline.kind == "code"
+                                        %}<code>{{ inline.text }}</code>{% else if inline.kind == "strong" %}<strong>{%
+                                            for c in inline.children %}{% if c.kind == "text" %}{{ c.text }}{% endif
+                                            %}{% endfor %}</strong>{% else if inline.kind == "em" %}<em>{% for c in
+                                            inline.children %}{% if c.kind == "text" %}{{ c.text }}{% endif %}{% endfor
+                                            %}</em>{% else if inline.kind == "link" %}<a href="{{ inline.href }}">{% for
+                                            c in inline.children %}{% if c.kind == "text" %}{{ c.text }}{% endif %}{%
+                                            endfor %}</a>{% else if inline.kind == "softbreak" %} {% endif %}{% endfor
+                                        %}</td>{% endfor %}</tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {% else if block.kind == "blockquote" %}
+                    <blockquote class="article__blockquote">
+                        {% for child in block.children %}
+                        {% if child.kind == "paragraph" %}<p>{% for inline in child.inlines %}{% if inline.kind ==
+                            "text" %}{{ inline.text }}{% else if inline.kind == "softbreak" %} {% else if inline.kind ==
+                            "code" %}<code>{{ inline.text }}</code>{% else if inline.kind == "strong" %}<strong>{% for c
+                                in inline.children %}{% if c.kind == "text" %}{{ c.text }}{% endif %}{% endfor
+                                %}</strong>{% else if inline.kind == "em" %}<em>{% for c in inline.children %}{% if
+                                c.kind == "text" %}{{ c.text }}{% endif %}{% endfor %}</em>{% else if inline.kind ==
+                            "link" %}<a href="{{ inline.href }}">{% for c in inline.children %}{% if c.kind == "text"
+                                %}{{ c.text }}{% endif %}{% endfor %}</a>{% endif %}{% endfor %}</p>
+                        {% else if child.kind == "list" %}
+                        {% if child.ordered %}<ol class="article__list article__list--ordered">{% else %}<ul
+                                class="article__list">{% endif %}
+                                {% for item in child.items %}<li class="article__list-item">{% for ib in item.blocks
+                                    %}{% if ib.kind == "paragraph" %}{% for inline in ib.inlines %}{% if inline.kind ==
+                                    "text" %}{{ inline.text }}{% else if inline.kind == "softbreak" %} {% else if
+                                    inline.kind == "hardbreak" %}<br>{% else if inline.kind == "code"
+                                    %}<code>{{ inline.text }}</code>{% else if inline.kind == "strong" %}<strong>{% for
+                                        c in inline.children %}{% if c.kind == "text" %}{{ c.text }}{% endif %}{% endfor
+                                        %}</strong>{% else if inline.kind == "em" %}<em>{% for c in inline.children %}{%
+                                        if c.kind == "text" %}{{ c.text }}{% endif %}{% endfor %}</em>{% else if
+                                    inline.kind == "link" %}<a href="{{ inline.href }}">{% for c in inline.children %}{%
+                                        if c.kind == "text" %}{{ c.text }}{% endif %}{% endfor %}</a>{% endif %}{%
+                                    endfor %}{% endif %}{% endfor %}</li>{% endfor %}
+                                {% if child.ordered %}</ol>{% else %}</ul>{% endif %}
+                        {% endif %}
+                        {% endfor %}
+                    </blockquote>
+
+                    {% else %}
+                    <p class="article__paragraph">{% for inline in block.inlines %}{% if inline.kind == "image" %}<img
+                            src="{{ inline.src }}" alt="{{ inline.alt }}" title="{{ inline.img_title }}"
+                            class="article__img">{% else if inline.kind == "link" %}<a href="{{ inline.href }}" {% if
+                            inline.link_title !="" %} title="{{ inline.link_title }}" {% endif %}>{% for child in
+                            inline.children %}{% if child.kind == "text" %}{{ child.text }}{% else if child.kind ==
+                            "code" %}<code>{{ child.text }}</code>{% else if child.kind == "strong" %}<strong>{% for gc
+                                in child.children %}{% if gc.kind == "text" %}{{ gc.text }}{% endif %}{% endfor
+                                %}</strong>{% else if child.kind == "em" %}<em>{% for gc in child.children %}{% if
+                                gc.kind == "text" %}{{ gc.text }}{% endif %}{% endfor %}</em>{% else if child.kind ==
+                            "softbreak" %} {% else if child.kind == "hardbreak" %}<br>{% endif %}{% endfor %}</a>{% else
+                        if inline.kind == "strong" %}<strong>{% for child in inline.children %}{% if child.kind ==
+                            "text" %}{{ child.text }}{% else if child.kind == "code" %}<code>{{ child.text }}</code>{%
+                            else if child.kind == "em" %}<em>{% for gc in child.children %}{% if gc.kind == "text" %}{{
+                                gc.text }}{% endif %}{% endfor %}</em>{% else if child.kind == "softbreak" %} {% else if
+                            child.kind == "hardbreak" %}<br>{% endif %}{% endfor %}</strong>{% else if inline.kind ==
+                        "em" %}<em>{% for child in inline.children %}{% if child.kind == "text" %}{{ child.text }}{%
+                            else if child.kind == "code" %}<code>{{ child.text }}</code>{% else if child.kind ==
+                            "strong" %}<strong>{% for gc in child.children %}{% if gc.kind == "text" %}{{ gc.text }}{%
+                                endif %}{% endfor %}</strong>{% else if child.kind == "softbreak" %} {% else if
+                            child.kind == "hardbreak" %}<br>{% endif %}{% endfor %}</em>{% else if inline.kind == "code"
+                        %}<code>{{ inline.text }}</code>{% else if inline.kind == "softbreak" %} {% else if inline.kind
+                        == "hardbreak" %}<br>{% else %}{{ inline.text }}{% endif %}{% endfor %}</p>
+                    {% endif %}
+                    {% endfor %}
+                </section>
+                {% endfor %}
         </article>
 
         <aside class="layout__right" aria-label="Table of contents">
-            <h2 class="column-title toc-toggle" id="toc-toggle" role="button" tabindex="0" aria-expanded="false" aria-controls="toc-list">
+            <h2 class="column-title toc-toggle" id="toc-toggle" role="button" tabindex="0" aria-expanded="false"
+                aria-controls="toc-list">
                 Contents
             </h2>
             <nav class="toc">
@@ -182,96 +327,97 @@
     <button class="view-switcher" id="view-switcher" aria-label="Switch view"></button>
 
     <script>
-    (function () {
-        'use strict';
-        var MOBILE_BREAKPOINT = 768;
-        var UA_MOBILE_KEY     = 'fa-view-override';
-        var body              = document.body;
-        var switcher          = document.getElementById('view-switcher');
-        var hamburgerBtn      = document.getElementById('hamburger-btn');
-        var nav               = document.getElementById('main-nav');
-        var tocToggle         = document.getElementById('toc-toggle');
-        var tocList           = document.getElementById('toc-list');
-        var serverSaidMobile  = body.dataset.serverMobile === 'true';
+        (function () {
+            'use strict';
+            var MOBILE_BREAKPOINT = 768;
+            var UA_MOBILE_KEY = 'fa-view-override';
+            var body = document.body;
+            var switcher = document.getElementById('view-switcher');
+            var hamburgerBtn = document.getElementById('hamburger-btn');
+            var nav = document.getElementById('main-nav');
+            var tocToggle = document.getElementById('toc-toggle');
+            var tocList = document.getElementById('toc-list');
+            var serverSaidMobile = body.dataset.serverMobile === 'true';
 
-        function viewportIsMobile() { return window.innerWidth <= MOBILE_BREAKPOINT; }
-        function getSavedOverride()  { try { return localStorage.getItem(UA_MOBILE_KEY); } catch(e) { return null; } }
-        function setSavedOverride(v) { try { localStorage.setItem(UA_MOBILE_KEY, v); } catch(e) {} }
-        function clearSavedOverride(){ try { localStorage.removeItem(UA_MOBILE_KEY); } catch(e) {} }
+            function viewportIsMobile() { return window.innerWidth <= MOBILE_BREAKPOINT; }
+            function getSavedOverride() { try { return localStorage.getItem(UA_MOBILE_KEY); } catch (e) { return null; } }
+            function setSavedOverride(v) { try { localStorage.setItem(UA_MOBILE_KEY, v); } catch (e) { } }
+            function clearSavedOverride() { try { localStorage.removeItem(UA_MOBILE_KEY); } catch (e) { } }
 
-        function applyMobile(on) {
-            body.classList.toggle('is-mobile', on);
-            updateSwitcherLabel(on);
-            updateHamburger();
-            updateToc();
-        }
-
-        function shouldShowSwitcher() {
-            return getSavedOverride() !== null || serverSaidMobile !== viewportIsMobile();
-        }
-
-        function updateSwitcherLabel(isMobile) {
-            switcher.textContent = isMobile ? '🖥  Desktop view' : '📱  Mobile view';
-            body.classList.toggle('show-switcher', shouldShowSwitcher());
-        }
-
-        switcher.addEventListener('click', function() {
-            var next = !body.classList.contains('is-mobile');
-            setSavedOverride(next ? 'mobile' : 'desktop');
-            applyMobile(next);
-        });
-
-        function updateHamburger() {
-            if (!body.classList.contains('is-mobile')) {
-                nav.classList.remove('is-open');
-                hamburgerBtn.setAttribute('aria-expanded', 'false');
+            function applyMobile(on) {
+                body.classList.toggle('is-mobile', on);
+                updateSwitcherLabel(on);
+                updateHamburger();
+                updateToc();
             }
-        }
 
-        hamburgerBtn.addEventListener('click', function() {
-            var isOpen = nav.classList.toggle('is-open');
-            hamburgerBtn.setAttribute('aria-expanded', String(isOpen));
-        });
-
-        function updateToc() {
-            if (!body.classList.contains('is-mobile')) {
-                tocList.classList.add('is-open');
-                tocToggle.classList.remove('is-open');
+            function shouldShowSwitcher() {
+                return getSavedOverride() !== null || serverSaidMobile !== viewportIsMobile();
             }
-        }
 
-        tocToggle.addEventListener('click', function() {
-            if (!body.classList.contains('is-mobile')) return;
-            var isOpen = tocList.classList.toggle('is-open');
-            tocToggle.classList.toggle('is-open', isOpen);
-            tocToggle.setAttribute('aria-expanded', String(isOpen));
-        });
+            function updateSwitcherLabel(isMobile) {
+                switcher.textContent = isMobile ? '🖥  Desktop view' : '📱  Mobile view';
+                body.classList.toggle('show-switcher', shouldShowSwitcher());
+            }
 
-        tocToggle.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tocToggle.click(); }
-        });
+            switcher.addEventListener('click', function () {
+                var next = !body.classList.contains('is-mobile');
+                setSavedOverride(next ? 'mobile' : 'desktop');
+                applyMobile(next);
+            });
 
-        var resizeTimer;
-        window.addEventListener('resize', function() {
-            clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(function() {
+            function updateHamburger() {
+                if (!body.classList.contains('is-mobile')) {
+                    nav.classList.remove('is-open');
+                    hamburgerBtn.setAttribute('aria-expanded', 'false');
+                }
+            }
+
+            hamburgerBtn.addEventListener('click', function () {
+                var isOpen = nav.classList.toggle('is-open');
+                hamburgerBtn.setAttribute('aria-expanded', String(isOpen));
+            });
+
+            function updateToc() {
+                if (!body.classList.contains('is-mobile')) {
+                    tocList.classList.add('is-open');
+                    tocToggle.classList.remove('is-open');
+                }
+            }
+
+            tocToggle.addEventListener('click', function () {
+                if (!body.classList.contains('is-mobile')) return;
+                var isOpen = tocList.classList.toggle('is-open');
+                tocToggle.classList.toggle('is-open', isOpen);
+                tocToggle.setAttribute('aria-expanded', String(isOpen));
+            });
+
+            tocToggle.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tocToggle.click(); }
+            });
+
+            var resizeTimer;
+            window.addEventListener('resize', function () {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(function () {
+                    var override = getSavedOverride();
+                    if (override !== null) { updateSwitcherLabel(body.classList.contains('is-mobile')); return; }
+                    var wantMobile = viewportIsMobile();
+                    if (wantMobile !== body.classList.contains('is-mobile')) applyMobile(wantMobile);
+                    if (wantMobile === serverSaidMobile) { clearSavedOverride(); body.classList.remove('show-switcher'); }
+                }, 100);
+            });
+            window.addEventListener('orientationchange', function () { window.dispatchEvent(new Event('resize')); });
+
+            (function init() {
                 var override = getSavedOverride();
-                if (override !== null) { updateSwitcherLabel(body.classList.contains('is-mobile')); return; }
-                var wantMobile = viewportIsMobile();
-                if (wantMobile !== body.classList.contains('is-mobile')) applyMobile(wantMobile);
-                if (wantMobile === serverSaidMobile) { clearSavedOverride(); body.classList.remove('show-switcher'); }
-            }, 100);
-        });
-        window.addEventListener('orientationchange', function() { window.dispatchEvent(new Event('resize')); });
-
-        (function init() {
-            var override = getSavedOverride();
-            var isMobile = override !== null ? (override === 'mobile') : (viewportIsMobile() || serverSaidMobile);
-            if (isMobile !== body.classList.contains('is-mobile')) applyMobile(isMobile);
-            else { updateSwitcherLabel(isMobile); updateHamburger(); updateToc(); }
-            if (!isMobile) tocList.classList.add('is-open');
+                var isMobile = override !== null ? (override === 'mobile') : (viewportIsMobile() || serverSaidMobile);
+                if (isMobile !== body.classList.contains('is-mobile')) applyMobile(isMobile);
+                else { updateSwitcherLabel(isMobile); updateHamburger(); updateToc(); }
+                if (!isMobile) tocList.classList.add('is-open');
+            })();
         })();
-    })();
     </script>
 </body>
+
 </html>

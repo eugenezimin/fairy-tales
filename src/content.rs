@@ -381,6 +381,23 @@ fn inlines_to_plain_text(inlines: &[Inline]) -> String {
     out
 }
 
+/// Convert SoftBreak→HardBreak when the break immediately precedes a Link
+/// (handles the common pattern of a bare URL or mailto on its own source line).
+fn normalize_breaks(inlines: Vec<Inline>) -> Vec<Inline> {
+    let mut out = Vec::with_capacity(inlines.len());
+    let mut iter = inlines.into_iter().peekable();
+    while let Some(inline) = iter.next() {
+        if matches!(inline, Inline::SoftBreak) {
+            if matches!(iter.peek(), Some(Inline::Link { .. })) {
+                out.push(Inline::HardBreak);
+                continue;
+            }
+        }
+        out.push(inline);
+    }
+    out
+}
+
 fn heading_level_to_u8(level: HeadingLevel) -> u8 {
     match level {
         HeadingLevel::H1 => 1,
@@ -503,6 +520,7 @@ fn parse_block(events: &[Event<'_>]) -> (Option<Block>, usize) {
     match &events[0] {
         Event::Start(Tag::Paragraph) => {
             let (inlines, consumed) = collect_inlines(&events[1..], TagEnd::Paragraph);
+            let inlines = normalize_breaks(inlines);
             (
                 if inlines.is_empty() {
                     None
@@ -637,6 +655,7 @@ fn parse_block(events: &[Event<'_>]) -> (Option<Block>, usize) {
             }
 
             inlines = stack.pop().unwrap_or_default();
+            let inlines = normalize_breaks(inlines);
             if inlines.is_empty() {
                 (None, pos)
             } else {
