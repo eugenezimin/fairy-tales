@@ -41,7 +41,12 @@ pub fn build_router(state: AppState) -> Router {
         .route("/", get(index_handler))
         .route("/:token", get(activate_admin_handler)) // <-- new
         .route("/article/:slug", get(article_handler))
+        .route("/admin", get(admin_list_handler))
         .route("/admin/article", post(upload_article_handler))
+        .route(
+            "/admin/article/:slug",
+            axum::routing::delete(delete_article_handler),
+        )
         .route("/admin/logout", get(logout_handler))
         .route("/admin/articles", get(list_articles_handler))
         .route("/healthz", get(health_handler))
@@ -196,6 +201,206 @@ async fn upload_article_handler(
             (StatusCode::INTERNAL_SERVER_ERROR, "write failed").into_response()
         }
     }
+}
+
+async fn admin_list_handler(State(state): State<AppState>, jar: CookieJar) -> impl IntoResponse {
+    use askama::Template;
+    if !is_admin_session(&state, &jar) {
+        return (StatusCode::UNAUTHORIZED, "unauthorized").into_response();
+    }
+
+    #[derive(askama::Template)]
+    #[template(path = "admin.html")]
+    struct AdminView {
+        site_title: String,
+        articles: Vec<AdminArticleEntry>,
+    }
+
+    #[derive(Clone)]
+    struct AdminArticleEntry {
+        slug: String,
+        title: String,
+        preview: String,
+    }
+
+    let dir = &state.config.content.dir;
+    let mut entries: Vec<(u64, AdminArticleEntry)> = Vec::new();
+
+    if let Ok(read_dir) = std::fs::read_dir(dir) {
+        for entry in read_dir.flatten() {
+            let path = entry.path();
+            if path.extension().and_then(|e| e.to_str()) != Some("md") {
+                continue;
+            }
+            let modified = entry
+                .metadata()
+                .ok()
+                .and_then(|m| m.modified().ok())
+                .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                .map(|d| d.as_secs())
+                .unwrap_or(0);
+
+            let raw = std::fs::read_to_string(&path).unwrap_or_default();
+            let (slug, title, preview) = extract_admin_preview(&raw);
+
+            entries.push((
+                modified,
+                AdminArticleEntry {
+                    slug,
+                    title,
+                    preview,
+                },
+            ));
+        }
+    }
+
+    // newest first
+    entries.sort_by(|a, b| b.0.cmp(&a.0));
+    let articles: Vec<AdminArticleEntry> = entries.into_iter().map(|(_, e)| e).collect();
+
+    match (AdminView {
+        site_title: state.config.site.title.clone(),
+        articles,
+    }
+    .render())
+    {
+        Ok(html) => Html(html).into_response(),
+        Err(e) => {
+            tracing::error!(error = ?e, "admin list render failed");
+            (StatusCode::INTERNAL_SERVER_ERROR, "render error").into_response()
+        }
+    }
+}
+
+async fn delete_article_handler(
+    State(state): State<AppState>,
+    jar: CookieJar,
+    Path(slug): Path<String>,
+) -> impl IntoResponse {
+    if !is_admin_session(&state, &jar) {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
+
+    // Sanitise slug
+    if slug.contains('/') || slug.contains('\\') || slug.contains("..") {
+        return StatusCode::BAD_REQUEST.into_response();
+    }
+
+    let path = state.config.content.dir.join(format!("{slug}.md"));
+
+    // Path traversal guard
+    let Ok(canonical_content) = std::fs::canonicalize(&state.config.content.dir) else {
+        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+    };
+    let Ok(canonical_path) = std::fs::canonicalize(&path) else {
+        return StatusCode::NOT_FOUND.into_response();
+    };
+    if !canonical_path.starts_with(&canonical_content) {
+        return StatusCode::BAD_REQUEST.into_response();
+    }
+
+    match std::fs::remove_file(&canonical_path) {
+        Ok(_) => StatusCode::NO_CONTENT.into_response(),
+        Err(e) => {
+            tracing::error!(error = ?e, slug = %slug, "delete failed");
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}
+
+fn extract_admin_preview(raw: &str) -> (String, String, String) {
+    // Split front matter
+    let raw = raw.trim_start_matches('\n');
+    let (front, body) = if raw.starts_with("+++") {
+        let after = raw[3..].trim_start_matches('\n');
+        if let Some(close) = after.find("\n+++") {
+            let front = &after[..close];
+            let body = after[close + 4..].trim_start_matches('\n');
+            (front, body)
+        } else {
+            ("", raw)
+        }
+    } else {
+        ("", raw)
+    };
+
+    // Slug from front matter or derived
+    let slug_fm = {
+        let mut s = String::new();
+        for line in front.lines() {
+            let line = line.trim();
+            if let Some(eq) = line.find('=') {
+                if line[..eq].trim() == "slug" {
+                    s = line[eq + 1..].trim().trim_matches('"').to_string();
+                    break;
+                }
+            }
+        }
+        s
+    };
+
+    // Title = first H1 line
+    let mut title = String::new();
+    let mut preview_chars: Vec<char> = Vec::new();
+    let mut past_title = false;
+
+    for line in body.lines() {
+        if !past_title {
+            let trimmed = line.trim();
+            if trimmed.starts_with("# ") {
+                title = trimmed[2..].to_string();
+                past_title = true;
+                continue;
+            }
+            if !trimmed.is_empty() && !trimmed.starts_with('#') {
+                // No H1 found yet but there's content — treat as body
+                past_title = true;
+            }
+        }
+        if past_title && preview_chars.len() < 240 {
+            let trimmed = line.trim();
+            if trimmed.is_empty() {
+                if !preview_chars.is_empty() {
+                    preview_chars.push(' ');
+                }
+                continue;
+            }
+            // Skip markdown headings and HTML comments
+            if trimmed.starts_with('#') || trimmed.starts_with("<!--") {
+                continue;
+            }
+            for ch in trimmed.chars() {
+                if preview_chars.len() >= 240 {
+                    break;
+                }
+                preview_chars.push(ch);
+            }
+            preview_chars.push(' ');
+        }
+    }
+
+    let mut preview: String = preview_chars.into_iter().collect();
+    preview = preview.trim().to_string();
+    if preview.len() >= 240 {
+        preview.push('…');
+    }
+
+    let slug = if slug_fm.is_empty() {
+        // minimal slugify
+        title
+            .to_lowercase()
+            .chars()
+            .map(|c| if c.is_alphanumeric() { c } else { '-' })
+            .collect::<String>()
+            .split('-')
+            .filter(|s| !s.is_empty())
+            .collect::<Vec<_>>()
+            .join("-")
+    } else {
+        slug_fm
+    };
+
+    (slug, title, preview)
 }
 
 fn extract_slug_from_raw(raw: &str) -> String {

@@ -670,7 +670,7 @@ fn parse_block(events: &[Event<'_>]) -> (Option<Block>, usize) {
 
 /// Collect inline events until the matching end tag. Returns `(inlines, events_consumed_before_end)`.
 fn collect_inlines<'a>(events: &[Event<'a>], end: TagEnd) -> (Vec<Inline>, usize) {
-    let mut inlines = Vec::new();
+    // let mut inlines = Vec::new();
     let mut pos = 0;
     let mut link_meta: Vec<(String, String)> = Vec::new(); // (href, title)
     let mut img_meta: Vec<(String, String)> = Vec::new(); // (src,  title)
@@ -680,8 +680,8 @@ fn collect_inlines<'a>(events: &[Event<'a>], end: TagEnd) -> (Vec<Inline>, usize
     while pos < events.len() {
         match &events[pos] {
             Event::End(t) if *t == end => {
-                inlines = stack.pop().unwrap_or_default();
-                return (inlines, pos);
+                // inlines = stack.pop().unwrap_or_default();
+                return (stack.pop().unwrap_or_default(), pos);
             }
 
             Event::Text(t) => {
