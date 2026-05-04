@@ -100,6 +100,11 @@
             </h1>
             <nav class="site-header__nav" id="main-nav">
                 <a href="#">About</a>
+                {% if is_admin %}
+                <a href="/admin/articles">List Articles</a>
+                <a href="#" id="upload-trigger">Upload Article</a>
+                <a href="/admin/logout">Log Out</a>
+                {% endif %}
             </nav>
             <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle menu" aria-expanded="false"
                 aria-controls="mobile-stories-drawer">
@@ -369,208 +374,288 @@
             <p>&copy; {{ year }} {{ site_title }}. Rendered with Rust.</p>
         </div>
     </footer>
-<script>
-    (function () {
-        'use strict';
-        var MOBILE_BREAKPOINT = 1100;
-        var body = document.body;
-        var hamburgerBtn = document.getElementById('hamburger-btn');
-        var drawer = document.getElementById('mobile-stories-drawer');
-        var backdrop = document.getElementById('mobile-drawer-backdrop');
-        var tocToggle = document.getElementById('mobile-toc-toggle');
-        var tocList = document.getElementById('mobile-toc-list');
+    <script>
+        (function () {
+            'use strict';
+            var MOBILE_BREAKPOINT = 1100;
+            var body = document.body;
+            var hamburgerBtn = document.getElementById('hamburger-btn');
+            var drawer = document.getElementById('mobile-stories-drawer');
+            var backdrop = document.getElementById('mobile-drawer-backdrop');
+            var tocToggle = document.getElementById('mobile-toc-toggle');
+            var tocList = document.getElementById('mobile-toc-list');
 
-        /* -- Drawer -- */
-        function openDrawer() {
-            drawer.classList.add('is-open');
-            backdrop.classList.add('is-open');
-            hamburgerBtn.classList.add('is-open');
-            hamburgerBtn.setAttribute('aria-expanded', 'true');
-            drawer.setAttribute('aria-hidden', 'false');
-            document.documentElement.style.overflow = 'hidden';
-        }
-
-        function closeDrawer() {
-            drawer.classList.remove('is-open');
-            backdrop.classList.remove('is-open');
-            hamburgerBtn.classList.remove('is-open');
-            hamburgerBtn.setAttribute('aria-expanded', 'false');
-            drawer.setAttribute('aria-hidden', 'true');
-            document.documentElement.style.overflow = '';
-            if (tocList) {
-                tocList.classList.remove('is-open');
-                tocToggle.classList.remove('is-open');
-                tocToggle.setAttribute('aria-expanded', 'false');
+            /* -- Drawer -- */
+            function openDrawer() {
+                drawer.classList.add('is-open');
+                backdrop.classList.add('is-open');
+                hamburgerBtn.classList.add('is-open');
+                hamburgerBtn.setAttribute('aria-expanded', 'true');
+                drawer.setAttribute('aria-hidden', 'false');
+                document.documentElement.style.overflow = 'hidden';
             }
-        }
 
-        hamburgerBtn.addEventListener('click', function () {
-            drawer.classList.contains('is-open') ? closeDrawer() : openDrawer();
-        });
-
-        backdrop.addEventListener('click', closeDrawer);
-
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') closeDrawer();
-        });
-
-        drawer.addEventListener('click', function (e) {
-            var link = e.target.closest('a[href]');
-            if (link && !link.href.includes('#')) closeDrawer();
-        });
-
-        /* -- TOC toggle -- */
-        if (tocToggle && tocList) {
-            function toggleToc() {
-                var isOpen = tocList.classList.toggle('is-open');
-                tocToggle.classList.toggle('is-open', isOpen);
-                tocToggle.setAttribute('aria-expanded', String(isOpen));
+            function closeDrawer() {
+                drawer.classList.remove('is-open');
+                backdrop.classList.remove('is-open');
+                hamburgerBtn.classList.remove('is-open');
+                hamburgerBtn.setAttribute('aria-expanded', 'false');
+                drawer.setAttribute('aria-hidden', 'true');
+                document.documentElement.style.overflow = '';
+                if (tocList) {
+                    tocList.classList.remove('is-open');
+                    tocToggle.classList.remove('is-open');
+                    tocToggle.setAttribute('aria-expanded', 'false');
+                }
             }
-            tocToggle.addEventListener('click', toggleToc);
-            tocToggle.addEventListener('keydown', function (e) {
-                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleToc(); }
+
+            hamburgerBtn.addEventListener('click', function () {
+                drawer.classList.contains('is-open') ? closeDrawer() : openDrawer();
             });
-            tocList.addEventListener('click', function (e) {
-                if (e.target.closest('a[href^="#"]')) setTimeout(closeDrawer, 120);
+
+            backdrop.addEventListener('click', closeDrawer);
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') closeDrawer();
             });
-        }
 
-        /* -- Mobile class -- */
-        function applyMobile(on) {
-            body.classList.toggle('is-mobile', on);
-            if (!on) closeDrawer();
-        }
+            drawer.addEventListener('click', function (e) {
+                var link = e.target.closest('a[href]');
+                if (link && !link.href.includes('#')) closeDrawer();
+            });
 
-        /* -- Resize -- */
-        var resizeTimer;
-        window.addEventListener('resize', function () {
-            clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(function () {
-                applyMobile(window.innerWidth <= MOBILE_BREAKPOINT);
-            }, 100);
-        });
-        window.addEventListener('orientationchange', function () {
-            window.dispatchEvent(new Event('resize'));
-        });
+            /* -- TOC toggle -- */
+            if (tocToggle && tocList) {
+                function toggleToc() {
+                    var isOpen = tocList.classList.toggle('is-open');
+                    tocToggle.classList.toggle('is-open', isOpen);
+                    tocToggle.setAttribute('aria-expanded', String(isOpen));
+                }
+                tocToggle.addEventListener('click', toggleToc);
+                tocToggle.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleToc(); }
+                });
+                tocList.addEventListener('click', function (e) {
+                    if (e.target.closest('a[href^="#"]')) setTimeout(closeDrawer, 120);
+                });
+            }
 
-        /* -- Init -- */
-        (function init() {
-            var serverSaidMobile = body.dataset.serverMobile === 'true';
-            applyMobile(serverSaidMobile || window.innerWidth <= MOBILE_BREAKPOINT);
+            /* -- Mobile class -- */
+            function applyMobile(on) {
+                body.classList.toggle('is-mobile', on);
+                if (!on) closeDrawer();
+            }
+
+            /* -- Resize -- */
+            var resizeTimer;
+            window.addEventListener('resize', function () {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(function () {
+                    applyMobile(window.innerWidth <= MOBILE_BREAKPOINT);
+                }, 100);
+            });
+            window.addEventListener('orientationchange', function () {
+                window.dispatchEvent(new Event('resize'));
+            });
+
+            /* -- Init -- */
+            (function init() {
+                var serverSaidMobile = body.dataset.serverMobile === 'true';
+                applyMobile(serverSaidMobile || window.innerWidth <= MOBILE_BREAKPOINT);
+            })();
         })();
-    })();
-</script>
-{% if is_admin %}
-<div id="admin-panel">
-    <div id="admin-panel__inner">
-        <h2>Admin — New Article</h2>
-        <p id="admin-status"></p>
-        <textarea id="admin-body" placeholder="Paste your .md article here…" spellcheck="false"></textarea>
-        <div id="admin-actions">
-            <button id="admin-submit">Publish</button>
-            <button id="admin-close">Close</button>
+    </script>
+    {% if is_admin %}
+    <div id="admin-panel" style="display:none">
+        <div id="admin-panel__inner">
+            <h2>Upload New Article</h2>
+            <p id="admin-status"></p>
+            <div id="admin-dropzone">
+                <p>Drop a <code>.md</code> file here or</p>
+                <label id="admin-file-label">
+                    Choose file
+                    <input type="file" id="admin-file" accept=".md">
+                </label>
+                <p id="admin-filename" style="color:var(--color-muted);font-size:.85rem"></p>
+            </div>
+            <div id="admin-actions">
+                <button id="admin-submit" disabled>Publish</button>
+                <button id="admin-close">Cancel</button>
+            </div>
         </div>
     </div>
-</div>
-<style>
-    #admin-panel {
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0.55);
-        z-index: 9000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    #admin-panel__inner {
-        background: var(--color-article-bg);
-        border: 2px solid var(--color-accent);
-        border-radius: var(--radius);
-        padding: 2rem;
-        width: min(680px, 92vw);
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-        box-shadow: 0 8px 40px rgba(0,0,0,0.4);
-    }
-    #admin-panel h2 {
-        font-family: var(--font-heading);
-        color: var(--color-accent);
-        margin: 0;
-    }
-    #admin-body {
-        width: 100%;
-        height: 340px;
-        font-family: "JetBrains Mono", ui-monospace, monospace;
-        font-size: 0.85rem;
-        background: var(--color-sidebar-bg);
-        color: var(--color-text);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius);
-        padding: 0.75rem;
-        resize: vertical;
-    }
-    #admin-actions { display: flex; gap: 1rem; }
-    #admin-submit {
-        background: var(--color-accent);
-        color: #fff;
-        border: none;
-        border-radius: var(--radius);
-        padding: 0.6rem 1.5rem;
-        font-size: 1rem;
-        cursor: pointer;
-    }
-    #admin-close {
-        background: none;
-        color: var(--color-muted);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius);
-        padding: 0.6rem 1.5rem;
-        font-size: 1rem;
-        cursor: pointer;
-    }
-    #admin-status { font-size: 0.9rem; color: var(--color-muted); min-height: 1.2em; }
-</style>
-<script>
-    (function() {
-        var panel = document.getElementById('admin-panel');
-        var textarea = document.getElementById('admin-body');
-        var status = document.getElementById('admin-status');
-        var submitBtn = document.getElementById('admin-submit');
-        var closeBtn = document.getElementById('admin-close');
+    <style>
+        #admin-panel {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            z-index: 9000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-        closeBtn.addEventListener('click', function() {
-            panel.style.display = 'none';
-        });
+        #admin-panel__inner {
+            background: var(--color-article-bg);
+            border: 2px solid var(--color-accent);
+            border-radius: var(--radius);
+            padding: 2rem;
+            width: min(520px, 92vw);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+        }
 
-        submitBtn.addEventListener('click', function() {
-            var body = textarea.value.trim();
-            if (!body) { status.textContent = 'Paste article content first.'; return; }
+        #admin-panel h2 {
+            font-family: var(--font-heading);
+            color: var(--color-accent);
+            margin: 0;
+        }
 
-            submitBtn.disabled = true;
-            status.textContent = 'Publishing…';
+        #admin-dropzone {
+            border: 2px dashed var(--color-border);
+            border-radius: var(--radius);
+            padding: 2rem 1rem;
+            text-align: center;
+            transition: border-color .2s, background .2s;
+        }
 
-            fetch('/admin/article', {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain' },
-                body: body,
-                credentials: 'include',  // sends the admin cookie
-            })
-            .then(function(r) {
-                if (r.ok) return r.text().then(function(slug) {
-                    status.textContent = '✓ Published! Redirecting…';
-                    setTimeout(function() { window.location = '/article/' + slug; }, 800);
-                });
-                return r.text().then(function(t) { throw new Error(t); });
-            })
-            .catch(function(e) {
-                status.textContent = '✗ ' + e.message;
-                submitBtn.disabled = false;
+        #admin-dropzone.drag-over {
+            border-color: var(--color-accent);
+            background: var(--color-hover);
+        }
+
+        #admin-file-label {
+            display: inline-block;
+            margin-top: .75rem;
+            background: var(--color-accent);
+            color: #fff;
+            padding: .45rem 1.2rem;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-size: .9rem;
+        }
+
+        #admin-file {
+            display: none;
+        }
+
+        #admin-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        #admin-submit {
+            background: var(--color-accent);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius);
+            padding: .6rem 1.5rem;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        #admin-submit:disabled {
+            opacity: .45;
+            cursor: default;
+        }
+
+        #admin-close {
+            background: none;
+            color: var(--color-muted);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius);
+            padding: .6rem 1.5rem;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        #admin-status {
+            font-size: .9rem;
+            color: var(--color-muted);
+            min-height: 1.2em;
+        }
+    </style>
+    <script>
+        (function () {
+            var panel = document.getElementById('admin-panel');
+            var dropzone = document.getElementById('admin-dropzone');
+            var fileInput = document.getElementById('admin-file');
+            var filename = document.getElementById('admin-filename');
+            var status = document.getElementById('admin-status');
+            var submitBtn = document.getElementById('admin-submit');
+            var closeBtn = document.getElementById('admin-close');
+            var trigger = document.getElementById('upload-trigger');
+            var chosenFile = null;
+
+            trigger.addEventListener('click', function (e) {
+                e.preventDefault();
+                panel.style.display = 'flex';
+                status.textContent = '';
+                filename.textContent = '';
+                fileInput.value = '';
+                chosenFile = null;
+                submitBtn.disabled = true;
             });
-        });
-    })();
-</script>
-{% endif %}
+
+            closeBtn.addEventListener('click', function () { panel.style.display = 'none'; });
+            panel.addEventListener('click', function (e) { if (e.target === panel) panel.style.display = 'none'; });
+
+            function setFile(f) {
+                if (!f || !f.name.endsWith('.md')) {
+                    status.textContent = 'Please choose a .md file.';
+                    submitBtn.disabled = true;
+                    chosenFile = null;
+                    filename.textContent = '';
+                    return;
+                }
+                chosenFile = f;
+                filename.textContent = f.name;
+                status.textContent = '';
+                submitBtn.disabled = false;
+            }
+
+            fileInput.addEventListener('change', function () { setFile(fileInput.files[0]); });
+
+            dropzone.addEventListener('dragover', function (e) { e.preventDefault(); dropzone.classList.add('drag-over'); });
+            dropzone.addEventListener('dragleave', function () { dropzone.classList.remove('drag-over'); });
+            dropzone.addEventListener('drop', function (e) {
+                e.preventDefault();
+                dropzone.classList.remove('drag-over');
+                setFile(e.dataTransfer.files[0]);
+            });
+
+            submitBtn.addEventListener('click', function () {
+                if (!chosenFile) return;
+                submitBtn.disabled = true;
+                status.textContent = 'Publishing…';
+
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    fetch('/admin/article', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain' },
+                        body: e.target.result,
+                        credentials: 'include',
+                    })
+                        .then(function (r) {
+                            if (r.ok) return r.text().then(function (slug) {
+                                status.textContent = '✓ Published! Redirecting…';
+                                setTimeout(function () { window.location = '/article/' + slug; }, 800);
+                            });
+                            return r.text().then(function (t) { throw new Error(t); });
+                        })
+                        .catch(function (e) {
+                            status.textContent = '✗ ' + e.message;
+                            submitBtn.disabled = false;
+                        });
+                };
+                reader.readAsText(chosenFile);
+            });
+        })();
+    </script>
+    {% endif %}
 </body>
 
 </html>

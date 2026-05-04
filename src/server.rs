@@ -42,6 +42,8 @@ pub fn build_router(state: AppState) -> Router {
         .route("/:token", get(activate_admin_handler)) // <-- new
         .route("/article/:slug", get(article_handler))
         .route("/admin/article", post(upload_article_handler))
+        .route("/admin/logout", get(logout_handler))
+        .route("/admin/articles", get(list_articles_handler))
         .route("/healthz", get(health_handler))
         .nest_service("/static", ServeDir::new(static_dir))
         .layer(TraceLayer::new_for_http())
@@ -118,6 +120,55 @@ async fn health_handler() -> &'static str {
     "ok"
 }
 
+async fn logout_handler(State(state): State<AppState>, jar: CookieJar) -> impl IntoResponse {
+    *state.admin_session.lock().unwrap() = None;
+    let jar = jar.remove(Cookie::from(ADMIN_COOKIE));
+    (jar, Redirect::to("/")).into_response()
+}
+
+async fn list_articles_handler(State(state): State<AppState>, jar: CookieJar) -> impl IntoResponse {
+    if !is_admin_session(&state, &jar) {
+        return (StatusCode::UNAUTHORIZED, "unauthorized").into_response();
+    }
+
+    let dir = &state.config.content.dir;
+    let entries = match std::fs::read_dir(dir) {
+        Ok(e) => e,
+        Err(_) => {
+            return (StatusCode::INTERNAL_SERVER_ERROR, "cannot read content dir").into_response();
+        }
+    };
+
+    let mut items = String::new();
+    let mut slugs: Vec<String> = entries
+        .flatten()
+        .filter_map(|e| {
+            let p = e.path();
+            if p.extension()?.to_str()? == "md" {
+                Some(p.file_stem()?.to_str()?.to_string())
+            } else {
+                None
+            }
+        })
+        .collect();
+    slugs.sort();
+
+    for slug in &slugs {
+        items.push_str(&format!(r#"<li><a href="/article/{slug}">{slug}</a></li>"#,));
+    }
+
+    let html = format!(
+        r#"<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>All Articles</title>
+<style>body{{font-family:system-ui;max-width:600px;margin:3rem auto;padding:0 1rem}}
+a{{color:#c0392b}}li{{margin:.4rem 0}}h1{{margin-bottom:1.5rem}}</style></head>
+<body><h1>All Articles</h1><ul>{items}</ul>
+<p style="margin-top:2rem"><a href="/">← Back</a></p></body></html>"#
+    );
+
+    Html(html).into_response()
+}
+
 async fn upload_article_handler(
     State(state): State<AppState>,
     jar: CookieJar,
@@ -149,6 +200,8 @@ async fn upload_article_handler(
 
 fn extract_slug_from_raw(raw: &str) -> String {
     let raw = raw.trim_start_matches('\n');
+
+    // 1. Try slug from front matter
     if raw.starts_with("+++") {
         if let Some(after) = raw.get(3..) {
             let after = after.trim_start_matches('\n');
@@ -158,14 +211,29 @@ fn extract_slug_from_raw(raw: &str) -> String {
                     let line = line.trim();
                     if let Some(eq) = line.find('=') {
                         if line[..eq].trim() == "slug" {
-                            return line[eq + 1..].trim().trim_matches('"').to_string();
+                            let v = line[eq + 1..].trim().trim_matches('"').to_string();
+                            if !v.is_empty() {
+                                return v;
+                            }
                         }
                     }
                 }
             }
         }
     }
-    // fallback: timestamp
+
+    // 2. Derive slug from the first H1 heading (mirrors parse_article logic)
+    for line in raw.lines() {
+        let trimmed = line.trim();
+        if let Some(rest) = trimmed.strip_prefix("# ") {
+            let title = rest.trim();
+            if !title.is_empty() {
+                return slugify_server(title);
+            }
+        }
+    }
+
+    // 3. Last resort: timestamp
     use std::time::{SystemTime, UNIX_EPOCH};
     format!(
         "article-{}",
@@ -174,6 +242,19 @@ fn extract_slug_from_raw(raw: &str) -> String {
             .map(|d| d.as_secs())
             .unwrap_or(0)
     )
+}
+
+/// Duplicate of content::slugify — kept here to avoid a cross-module dep.
+fn slugify_server(title: &str) -> String {
+    title
+        .to_lowercase()
+        .chars()
+        .map(|c| if c.is_alphanumeric() { c } else { '-' })
+        .collect::<String>()
+        .split('-')
+        .filter(|s| !s.is_empty())
+        .collect::<Vec<_>>()
+        .join("-")
 }
 
 async fn activate_admin_handler(
