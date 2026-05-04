@@ -95,21 +95,67 @@
 
     <header class="site-header">
         <div class="site-header__inner">
-            <h1 class="site-header__title"><a href="/" style="color:inherit;text-decoration:none;">{{ site_title }}</a>
+            <h1 class="site-header__title">
+                <a href="/" style="color:inherit;text-decoration:none;">{{ site_title }}</a>
             </h1>
             <nav class="site-header__nav" id="main-nav">
                 <a href="#">About</a>
             </nav>
-            <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle navigation" aria-expanded="false"
-                aria-controls="main-nav">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
+            <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle menu" aria-expanded="false"
+                aria-controls="mobile-stories-drawer">
+                <svg class="icon-menu" viewBox="0 0 24 24" aria-hidden="true">
                     <line x1="3" y1="6" x2="21" y2="6" />
                     <line x1="3" y1="12" x2="21" y2="12" />
                     <line x1="3" y1="18" x2="21" y2="18" />
                 </svg>
+                <svg class="icon-close" viewBox="0 0 24 24" aria-hidden="true">
+                    <line x1="4" y1="4" x2="20" y2="20" />
+                    <line x1="20" y1="4" x2="4" y2="20" />
+                </svg>
             </button>
         </div>
+
+        <!-- Mobile drawer: stories + TOC -->
+        <div class="mobile-stories-drawer" id="mobile-stories-drawer" aria-hidden="true">
+            <div class="mobile-stories-drawer__inner">
+
+                <!-- Stories -->
+                <p class="mobile-drawer-section-title">Other stories</p>
+                <ul class="story-list">
+                    {% for story in stories %}
+                    <li class="story-list__item">
+                        <a href="/article/{{ story.slug }}" class="story-list__link">
+                            <span class="story-list__title">{{ story.title }}</span>
+                            <span class="story-list__snippet">{{ story.snippet }}</span>
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+
+                <!-- TOC (collapsible) -->
+                {% if !toc.is_empty() %}
+                <div class="mobile-drawer-toc-section">
+                    <div class="mobile-toc-toggle" id="mobile-toc-toggle" role="button" tabindex="0"
+                        aria-expanded="false" aria-controls="mobile-toc-list">
+                        Contents
+                        <span class="mobile-toc-toggle__arrow">▸</span>
+                    </div>
+                    <ol class="mobile-toc-list" id="mobile-toc-list">
+                        {% for entry in toc %}
+                        <li class="toc__item toc__item--{{ entry.level }}">
+                            <a class="toc__link" href="#{{ entry.anchor }}">{{ entry.label }}</a>
+                        </li>
+                        {% endfor %}
+                    </ol>
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
     </header>
+
+    <!-- Backdrop for mobile drawer -->
+    <div class="mobile-drawer-backdrop" id="mobile-drawer-backdrop"></div>
 
     <main class="layout">
         <!-- <aside class="layout__left" aria-label="Current Story">
@@ -323,101 +369,95 @@
             <p>&copy; {{ year }} {{ site_title }}. Rendered with Rust.</p>
         </div>
     </footer>
+<script>
+    (function () {
+        'use strict';
+        var MOBILE_BREAKPOINT = 1100;
+        var body = document.body;
+        var hamburgerBtn = document.getElementById('hamburger-btn');
+        var drawer = document.getElementById('mobile-stories-drawer');
+        var backdrop = document.getElementById('mobile-drawer-backdrop');
+        var tocToggle = document.getElementById('mobile-toc-toggle');
+        var tocList = document.getElementById('mobile-toc-list');
 
-    <button class="view-switcher" id="view-switcher" aria-label="Switch view"></button>
+        /* -- Drawer -- */
+        function openDrawer() {
+            drawer.classList.add('is-open');
+            backdrop.classList.add('is-open');
+            hamburgerBtn.classList.add('is-open');
+            hamburgerBtn.setAttribute('aria-expanded', 'true');
+            drawer.setAttribute('aria-hidden', 'false');
+        }
 
-    <script>
-        (function () {
-            'use strict';
-            var MOBILE_BREAKPOINT = 768;
-            var UA_MOBILE_KEY = 'fa-view-override';
-            var body = document.body;
-            var switcher = document.getElementById('view-switcher');
-            var hamburgerBtn = document.getElementById('hamburger-btn');
-            var nav = document.getElementById('main-nav');
-            var tocToggle = document.getElementById('toc-toggle');
-            var tocList = document.getElementById('toc-list');
-            var serverSaidMobile = body.dataset.serverMobile === 'true';
-
-            function viewportIsMobile() { return window.innerWidth <= MOBILE_BREAKPOINT; }
-            function getSavedOverride() { try { return localStorage.getItem(UA_MOBILE_KEY); } catch (e) { return null; } }
-            function setSavedOverride(v) { try { localStorage.setItem(UA_MOBILE_KEY, v); } catch (e) { } }
-            function clearSavedOverride() { try { localStorage.removeItem(UA_MOBILE_KEY); } catch (e) { } }
-
-            function applyMobile(on) {
-                body.classList.toggle('is-mobile', on);
-                updateSwitcherLabel(on);
-                updateHamburger();
-                updateToc();
+        function closeDrawer() {
+            drawer.classList.remove('is-open');
+            backdrop.classList.remove('is-open');
+            hamburgerBtn.classList.remove('is-open');
+            hamburgerBtn.setAttribute('aria-expanded', 'false');
+            drawer.setAttribute('aria-hidden', 'true');
+            if (tocList) {
+                tocList.classList.remove('is-open');
+                tocToggle.classList.remove('is-open');
+                tocToggle.setAttribute('aria-expanded', 'false');
             }
+        }
 
-            function shouldShowSwitcher() {
-                return getSavedOverride() !== null || serverSaidMobile !== viewportIsMobile();
-            }
+        hamburgerBtn.addEventListener('click', function () {
+            drawer.classList.contains('is-open') ? closeDrawer() : openDrawer();
+        });
 
-            function updateSwitcherLabel(isMobile) {
-                switcher.textContent = isMobile ? '🖥  Desktop view' : '📱  Mobile view';
-                body.classList.toggle('show-switcher', shouldShowSwitcher());
-            }
+        backdrop.addEventListener('click', closeDrawer);
 
-            switcher.addEventListener('click', function () {
-                var next = !body.classList.contains('is-mobile');
-                setSavedOverride(next ? 'mobile' : 'desktop');
-                applyMobile(next);
-            });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeDrawer();
+        });
 
-            function updateHamburger() {
-                if (!body.classList.contains('is-mobile')) {
-                    nav.classList.remove('is-open');
-                    hamburgerBtn.setAttribute('aria-expanded', 'false');
-                }
-            }
+        drawer.addEventListener('click', function (e) {
+            var link = e.target.closest('a[href]');
+            if (link && !link.href.includes('#')) closeDrawer();
+        });
 
-            hamburgerBtn.addEventListener('click', function () {
-                var isOpen = nav.classList.toggle('is-open');
-                hamburgerBtn.setAttribute('aria-expanded', String(isOpen));
-            });
-
-            function updateToc() {
-                if (!body.classList.contains('is-mobile')) {
-                    tocList.classList.add('is-open');
-                    tocToggle.classList.remove('is-open');
-                }
-            }
-
-            tocToggle.addEventListener('click', function () {
-                if (!body.classList.contains('is-mobile')) return;
+        /* -- TOC toggle -- */
+        if (tocToggle && tocList) {
+            function toggleToc() {
                 var isOpen = tocList.classList.toggle('is-open');
                 tocToggle.classList.toggle('is-open', isOpen);
                 tocToggle.setAttribute('aria-expanded', String(isOpen));
-            });
-
+            }
+            tocToggle.addEventListener('click', toggleToc);
             tocToggle.addEventListener('keydown', function (e) {
-                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tocToggle.click(); }
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleToc(); }
             });
-
-            var resizeTimer;
-            window.addEventListener('resize', function () {
-                clearTimeout(resizeTimer);
-                resizeTimer = setTimeout(function () {
-                    var override = getSavedOverride();
-                    if (override !== null) { updateSwitcherLabel(body.classList.contains('is-mobile')); return; }
-                    var wantMobile = viewportIsMobile();
-                    if (wantMobile !== body.classList.contains('is-mobile')) applyMobile(wantMobile);
-                    if (wantMobile === serverSaidMobile) { clearSavedOverride(); body.classList.remove('show-switcher'); }
-                }, 100);
+            tocList.addEventListener('click', function (e) {
+                if (e.target.closest('a[href^="#"]')) setTimeout(closeDrawer, 120);
             });
-            window.addEventListener('orientationchange', function () { window.dispatchEvent(new Event('resize')); });
+        }
 
-            (function init() {
-                var override = getSavedOverride();
-                var isMobile = override !== null ? (override === 'mobile') : (viewportIsMobile() || serverSaidMobile);
-                if (isMobile !== body.classList.contains('is-mobile')) applyMobile(isMobile);
-                else { updateSwitcherLabel(isMobile); updateHamburger(); updateToc(); }
-                if (!isMobile) tocList.classList.add('is-open');
-            })();
+        /* -- Mobile class -- */
+        function applyMobile(on) {
+            body.classList.toggle('is-mobile', on);
+            if (!on) closeDrawer();
+        }
+
+        /* -- Resize -- */
+        var resizeTimer;
+        window.addEventListener('resize', function () {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(function () {
+                applyMobile(window.innerWidth <= MOBILE_BREAKPOINT);
+            }, 100);
+        });
+        window.addEventListener('orientationchange', function () {
+            window.dispatchEvent(new Event('resize'));
+        });
+
+        /* -- Init -- */
+        (function init() {
+            var serverSaidMobile = body.dataset.serverMobile === 'true';
+            applyMobile(serverSaidMobile || window.innerWidth <= MOBILE_BREAKPOINT);
         })();
-    </script>
+    })();
+</script>
 </body>
 
 </html>
