@@ -206,8 +206,14 @@ async fn admin_list_handler(State(state): State<AppState>, jar: CookieJar) -> im
                 .map(|d| d.as_secs())
                 .unwrap_or(0);
 
+            let slug = path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or_default()
+                .to_string();
+
             let raw = std::fs::read_to_string(&path).unwrap_or_default();
-            let (slug, title, preview) = extract_admin_preview(&raw);
+            let (_slug_fm, title, preview) = extract_admin_preview(&raw);
 
             entries.push((
                 modified,
