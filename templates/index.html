@@ -96,33 +96,53 @@
         <article class="layout__main">
             <h1 class="article__title">{{ page_title }}</h1>
 
-            {% for section in sections %}
+            {% for block in section.blocks %}
+                {% if block.kind == "ad" %}
+                <div class="article__ad" data-slot="{{ block.slot }}">[ Advertisement: {{ block.slot }} ]</div>
 
-            {% if section.kind == "ad" %}
-            <div id="{{ section.id }}" class="article__ad" data-slot="{{ section.slot }}">
-                [ Advertisement: {{ section.slot }} ]
-            </div>
+                {% else if block.kind == "rule" %}
+                <hr class="article__rule">
 
-            {% else %}
-            <section id="{{ section.id }}" class="article__section">
+                {% else if block.kind == "code" %}
+                <pre class="article__pre"><code{% if block.lang != "" %} class="language-{{ block.lang }}"{% endif %}>{{ block.code }}</code></pre>
 
-                {% if section.kind == "heading" %}
-                    {% if section.level == "h2" %}
-                    <h2 class="article__heading">{{ section.heading }}</h2>
-                    {% else if section.level == "h3" %}
-                    <h3 class="article__heading--h3">{{ section.heading }}</h3>
-                    {% else %}
-                    <h4 class="article__heading--h4">{{ section.heading }}</h4>
-                    {% endif %}
-                {% endif %}
-
-                {% for para in section.paragraphs %}
-                <p class="article__paragraph">{% for inline in para.inlines %}{% if inline.kind == "image" %}<img src="{{ inline.src }}" alt="{{ inline.alt }}" class="article__img--{{ inline.flow }}">{% else if inline.kind == "link" %}<a href="{{ inline.href }}">{{ inline.link_text }}</a>{% else %}{{ inline.text }}{% endif %}{% endfor %}</p>
+                {% else if block.kind == "list" %}
+                {% if block.ordered %}<ol class="article__list article__list--ordered">{% else %}<ul class="article__list">{% endif %}
+                {% for item in block.items %}
+                    <li class="article__list-item">
+                    {% for ib in item.blocks %}
+                        {% if ib.kind == "paragraph" %}
+                        <span>{% for inline in ib.inlines %}{% if inline.kind == "image" %}<img src="{{ inline.src }}" alt="{{ inline.alt }}" class="article__img">{% else if inline.kind == "link" %}<a href="{{ inline.href }}">{% for child in inline.children %}{% if child.kind == "text" %}{{ child.text }}{% else if child.kind == "code" %}<code>{{ child.text }}</code>{% else if child.kind == "strong" %}<strong>{% for gc in child.children %}{% if gc.kind == "text" %}{{ gc.text }}{% endif %}{% endfor %}</strong>{% else if child.kind == "em" %}<em>{% for gc in child.children %}{% if gc.kind == "text" %}{{ gc.text }}{% endif %}{% endfor %}</em>{% else if child.kind == "softbreak" %} {% else if child.kind == "hardbreak" %}<br>{% endif %}{% endfor %}</a>{% else if inline.kind == "strong" %}<strong>{% for child in inline.children %}{% if child.kind == "text" %}{{ child.text }}{% else if child.kind == "em" %}<em>{% for gc in child.children %}{% if gc.kind == "text" %}{{ gc.text }}{% endif %}{% endfor %}</em>{% else if child.kind == "softbreak" %} {% else if child.kind == "hardbreak" %}<br>{% endif %}{% endfor %}</strong>{% else if inline.kind == "em" %}<em>{% for child in inline.children %}{% if child.kind == "text" %}{{ child.text }}{% else if child.kind == "softbreak" %} {% else if child.kind == "hardbreak" %}<br>{% endif %}{% endfor %}</em>{% else if inline.kind == "code" %}<code>{{ inline.text }}</code>{% else if inline.kind == "softbreak" %} {% else if inline.kind == "hardbreak" %}<br>{% else %}{{ inline.text }}{% endif %}{% endfor %}</span>
+                        {% else if ib.kind == "list" %}
+                        {% if ib.ordered %}<ol class="article__list article__list--ordered">{% else %}<ul class="article__list">{% endif %}
+                        {% for subitem in ib.items %}<li class="article__list-item">{% for sib in subitem.blocks %}{% if sib.kind == "paragraph" %}{% for inline in sib.inlines %}{% if inline.kind == "text" %}{{ inline.text }}{% else if inline.kind == "softbreak" %} {% else if inline.kind == "hardbreak" %}<br>{% else if inline.kind == "code" %}<code>{{ inline.text }}</code>{% else if inline.kind == "strong" %}<strong>{% for c in inline.children %}{% if c.kind == "text" %}{{ c.text }}{% endif %}{% endfor %}</strong>{% else if inline.kind == "em" %}<em>{% for c in inline.children %}{% if c.kind == "text" %}{{ c.text }}{% endif %}{% endfor %}</em>{% else if inline.kind == "link" %}<a href="{{ inline.href }}">{% for c in inline.children %}{% if c.kind == "text" %}{{ c.text }}{% endif %}{% endfor %}</a>{% endif %}{% endfor %}{% endif %}{% endfor %}</li>{% endfor %}
+                        {% if ib.ordered %}</ol>{% else %}</ul>{% endif %}
+                        {% endif %}
+                    {% endfor %}
+                    </li>
                 {% endfor %}
+                {% if block.ordered %}</ol>{% else %}</ul>{% endif %}
 
-            </section>
-            {% endif %}
+                {% else if block.kind == "table" %}
+                <div class="article__table-wrap">
+                <table class="article__table">
+                    <thead><tr>{% for cell in block.headers %}<th>{% for inline in cell %}{% if inline.kind == "text" %}{{ inline.text }}{% else if inline.kind == "strong" %}<strong>{% for c in inline.children %}{% if c.kind == "text" %}{{ c.text }}{% endif %}{% endfor %}</strong>{% else if inline.kind == "code" %}<code>{{ inline.text }}</code>{% endif %}{% endfor %}</th>{% endfor %}</tr></thead>
+                    <tbody>
+                    {% for row in block.rows %}
+                    <tr>{% for cell in row %}<td>{% for inline in cell %}{% if inline.kind == "text" %}{{ inline.text }}{% else if inline.kind == "code" %}<code>{{ inline.text }}</code>{% else if inline.kind == "strong" %}<strong>{% for c in inline.children %}{% if c.kind == "text" %}{{ c.text }}{% endif %}{% endfor %}</strong>{% else if inline.kind == "em" %}<em>{% for c in inline.children %}{% if c.kind == "text" %}{{ c.text }}{% endif %}{% endfor %}</em>{% else if inline.kind == "link" %}<a href="{{ inline.href }}">{% for c in inline.children %}{% if c.kind == "text" %}{{ c.text }}{% endif %}{% endfor %}</a>{% else if inline.kind == "softbreak" %} {% endif %}{% endfor %}</td>{% endfor %}</tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                </div>
 
+                {% else if block.kind == "blockquote" %}
+                <blockquote class="article__blockquote">
+                    {% for child in block.children %}{% if child.kind == "paragraph" %}<p>{% for inline in child.inlines %}{% if inline.kind == "text" %}{{ inline.text }}{% else if inline.kind == "softbreak" %} {% else if inline.kind == "code" %}<code>{{ inline.text }}</code>{% else if inline.kind == "strong" %}<strong>{% for c in inline.children %}{% if c.kind == "text" %}{{ c.text }}{% endif %}{% endfor %}</strong>{% else if inline.kind == "em" %}<em>{% for c in inline.children %}{% if c.kind == "text" %}{{ c.text }}{% endif %}{% endfor %}</em>{% endif %}{% endfor %}</p>{% endif %}{% endfor %}
+                </blockquote>
+
+                {% else %}
+                <p class="article__paragraph">{% for inline in block.inlines %}{% if inline.kind == "image" %}<img src="{{ inline.src }}" alt="{{ inline.alt }}" title="{{ inline.img_title }}" class="article__img">{% else if inline.kind == "link" %}<a href="{{ inline.href }}"{% if inline.link_title != "" %} title="{{ inline.link_title }}"{% endif %}>{% for child in inline.children %}{% if child.kind == "text" %}{{ child.text }}{% else if child.kind == "code" %}<code>{{ child.text }}</code>{% else if child.kind == "strong" %}<strong>{% for gc in child.children %}{% if gc.kind == "text" %}{{ gc.text }}{% endif %}{% endfor %}</strong>{% else if child.kind == "em" %}<em>{% for gc in child.children %}{% if gc.kind == "text" %}{{ gc.text }}{% endif %}{% endfor %}</em>{% else if child.kind == "softbreak" %} {% else if child.kind == "hardbreak" %}<br>{% endif %}{% endfor %}</a>{% else if inline.kind == "strong" %}<strong>{% for child in inline.children %}{% if child.kind == "text" %}{{ child.text }}{% else if child.kind == "code" %}<code>{{ child.text }}</code>{% else if child.kind == "em" %}<em>{% for gc in child.children %}{% if gc.kind == "text" %}{{ gc.text }}{% endif %}{% endfor %}</em>{% else if child.kind == "softbreak" %} {% else if child.kind == "hardbreak" %}<br>{% endif %}{% endfor %}</strong>{% else if inline.kind == "em" %}<em>{% for child in inline.children %}{% if child.kind == "text" %}{{ child.text }}{% else if child.kind == "code" %}<code>{{ child.text }}</code>{% else if child.kind == "strong" %}<strong>{% for gc in child.children %}{% if gc.kind == "text" %}{{ gc.text }}{% endif %}{% endfor %}</strong>{% else if child.kind == "softbreak" %} {% else if child.kind == "hardbreak" %}<br>{% endif %}{% endfor %}</em>{% else if inline.kind == "code" %}<code>{{ inline.text }}</code>{% else if inline.kind == "softbreak" %} {% else if inline.kind == "hardbreak" %}<br>{% else %}{{ inline.text }}{% endif %}{% endfor %}</p>
+                {% endif %}
             {% endfor %}
         </article>
 
