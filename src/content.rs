@@ -511,7 +511,7 @@ fn parse_block(events: &[Event<'_>]) -> (Option<Block>, usize) {
         }
 
         Event::Start(Tag::BlockQuote(_)) => {
-            let (blocks, consumed) = collect_block_children(&events[1..], TagEnd::BlockQuote);
+            let (blocks, consumed) = collect_block_children(&events[1..], TagEnd::BlockQuote(None));
             (Some(Block::BlockQuote(blocks)), 1 + consumed + 1)
         }
 
