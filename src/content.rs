@@ -149,12 +149,23 @@ pub fn load(cfg: &ContentConfig, requested_slug: Option<&str>) -> Result<Content
     };
 
     // Sidebar cards — cheap metadata only.
+    // Sidebar cards — parse each article for a snippet.
     let mut stories: Vec<StoryHeader> = metas
         .iter()
-        .map(|m| StoryHeader {
-            title: m.title.clone(),
-            slug: m.slug.clone(),
-            snippet: String::new(),
+        .enumerate()
+        .map(|(i, m)| {
+            let snippet = if i == chosen_idx {
+                String::new() // filled in after full parse below
+            } else {
+                parse_article_file(&m.path)
+                    .map(|a| first_text_snippet(&a))
+                    .unwrap_or_default()
+            };
+            StoryHeader {
+                title: m.title.clone(),
+                slug: m.slug.clone(),
+                snippet,
+            }
         })
         .collect();
 
@@ -162,6 +173,8 @@ pub fn load(cfg: &ContentConfig, requested_slug: Option<&str>) -> Result<Content
     let article = parse_article_file(&metas[chosen_idx].path)?;
     stories[chosen_idx].snippet = first_text_snippet(&article);
 
+    stories.retain(|s| s.slug != article.slug);
+    stories.truncate(4); // "Current story" pin takes 1 slot → 4 others = 5 total
     shuffle(&mut stories);
 
     Ok(ContentBundle { article, stories })
@@ -427,7 +440,13 @@ fn first_text_snippet(article: &Article) -> String {
                 let trimmed = text.trim().to_string();
                 if !trimmed.is_empty() {
                     return if trimmed.len() > 120 {
-                        format!("{}…", &trimmed[..120])
+                        let cut = trimmed
+                            .char_indices()
+                            .map(|(i, _)| i)
+                            .take(120)
+                            .last()
+                            .unwrap_or(0);
+                        format!("{}…", &trimmed[..cut])
                     } else {
                         trimmed
                     };
@@ -510,8 +529,9 @@ fn parse_block(events: &[Event<'_>]) -> (Option<Block>, usize) {
             (Some(table), 1 + consumed + 1)
         }
 
-        Event::Start(Tag::BlockQuote(_)) => {
-            let (blocks, consumed) = collect_block_children(&events[1..], TagEnd::BlockQuote(None));
+        Event::Start(Tag::BlockQuote(kind)) => {
+            let end = TagEnd::BlockQuote(*kind);
+            let (blocks, consumed) = collect_block_children(&events[1..], end);
             (Some(Block::BlockQuote(blocks)), 1 + consumed + 1)
         }
 
@@ -746,12 +766,20 @@ fn collect_block_children(events: &[Event<'_>], end: TagEnd) -> (Vec<Block>, usi
 
     while pos < events.len() {
         if let Event::End(t) = &events[pos] {
-            if *t == end {
+            let matches = match (&end, t) {
+                (TagEnd::BlockQuote(_), TagEnd::BlockQuote(_)) => true,
+                (TagEnd::Item, TagEnd::Item) => true,
+                _ => *t == end,
+            };
+            if matches {
                 return (blocks, pos);
             }
         }
-        // Headings inside block-children (e.g. blockquote) — treat as paragraph.
         let (block, consumed) = parse_block(&events[pos..]);
+        if consumed == 0 {
+            pos += 1; // guard against infinite loop on unrecognised events
+            continue;
+        }
         pos += consumed;
         if let Some(b) = block {
             blocks.push(b);
