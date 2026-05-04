@@ -1,10 +1,4 @@
-+++
-title     = "26.04.24 - review ADR-001.09 & ADR-001.11"
-slug      = "review-ADR"
-published = "2026-05-02"
-+++
-
-# 26.04.24 - review ADR-001.09 & ADR-001.11
+# Review ADR-001.09 & ADR-001.11
 
 [[EVO] ADR-001.9: MultiAZ Evolution Container Apps Data Plane](https://wiki.cloud.ru/spaces/EVO/pages/642767358/EVO+ADR-001.9+MultiAZ+Evolution+Container+Apps+Data+Plane?src=contextnavpagetreemode)
 [[EVO] ADR-001.11: MultiAZ Evolution Container Apps Control Plane](https://wiki.cloud.ru/spaces/EVO/pages/671519430/EVO+ADR-001.11+MultiAZ+Evolution+Container+Apps+Control+Plane?src=contextnavpagetreemode)
