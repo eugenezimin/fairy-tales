@@ -15,6 +15,7 @@ pub struct Config {
     pub site: SiteConfig,
     pub content: ContentConfig,
     pub theme: ThemeConfig,
+    pub admin: AdminConfig,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -48,6 +49,11 @@ pub struct ContentConfig {
 pub struct ThemeConfig {
     /// Active theme name; corresponds to `static/css/theme-{name}.css`.
     pub name: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct AdminConfig {
+    pub token: String,
 }
 
 impl Config {

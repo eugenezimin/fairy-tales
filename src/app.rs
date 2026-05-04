@@ -5,7 +5,7 @@
 //! fresh on every request so new articles appear without a restart.
 
 use anyhow::Result;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use crate::config::Config;
 use crate::server::{self, AppState};
@@ -29,6 +29,7 @@ impl Application {
 
         let state = AppState {
             config: Arc::new(config),
+            admin_session: Arc::new(Mutex::new(None)),
         };
 
         Ok(Self { state })

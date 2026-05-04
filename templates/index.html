@@ -460,6 +460,117 @@
         })();
     })();
 </script>
+{% if is_admin %}
+<div id="admin-panel">
+    <div id="admin-panel__inner">
+        <h2>Admin — New Article</h2>
+        <p id="admin-status"></p>
+        <textarea id="admin-body" placeholder="Paste your .md article here…" spellcheck="false"></textarea>
+        <div id="admin-actions">
+            <button id="admin-submit">Publish</button>
+            <button id="admin-close">Close</button>
+        </div>
+    </div>
+</div>
+<style>
+    #admin-panel {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.55);
+        z-index: 9000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    #admin-panel__inner {
+        background: var(--color-article-bg);
+        border: 2px solid var(--color-accent);
+        border-radius: var(--radius);
+        padding: 2rem;
+        width: min(680px, 92vw);
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+    }
+    #admin-panel h2 {
+        font-family: var(--font-heading);
+        color: var(--color-accent);
+        margin: 0;
+    }
+    #admin-body {
+        width: 100%;
+        height: 340px;
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 0.85rem;
+        background: var(--color-sidebar-bg);
+        color: var(--color-text);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius);
+        padding: 0.75rem;
+        resize: vertical;
+    }
+    #admin-actions { display: flex; gap: 1rem; }
+    #admin-submit {
+        background: var(--color-accent);
+        color: #fff;
+        border: none;
+        border-radius: var(--radius);
+        padding: 0.6rem 1.5rem;
+        font-size: 1rem;
+        cursor: pointer;
+    }
+    #admin-close {
+        background: none;
+        color: var(--color-muted);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius);
+        padding: 0.6rem 1.5rem;
+        font-size: 1rem;
+        cursor: pointer;
+    }
+    #admin-status { font-size: 0.9rem; color: var(--color-muted); min-height: 1.2em; }
+</style>
+<script>
+    (function() {
+        var panel = document.getElementById('admin-panel');
+        var textarea = document.getElementById('admin-body');
+        var status = document.getElementById('admin-status');
+        var submitBtn = document.getElementById('admin-submit');
+        var closeBtn = document.getElementById('admin-close');
+
+        closeBtn.addEventListener('click', function() {
+            panel.style.display = 'none';
+        });
+
+        submitBtn.addEventListener('click', function() {
+            var body = textarea.value.trim();
+            if (!body) { status.textContent = 'Paste article content first.'; return; }
+
+            submitBtn.disabled = true;
+            status.textContent = 'Publishing…';
+
+            fetch('/admin/article', {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: body,
+                credentials: 'include',  // sends the admin cookie
+            })
+            .then(function(r) {
+                if (r.ok) return r.text().then(function(slug) {
+                    status.textContent = '✓ Published! Redirecting…';
+                    setTimeout(function() { window.location = '/article/' + slug; }, 800);
+                });
+                return r.text().then(function(t) { throw new Error(t); });
+            })
+            .catch(function(e) {
+                status.textContent = '✗ ' + e.message;
+                submitBtn.disabled = false;
+            });
+        });
+    })();
+</script>
+{% endif %}
 </body>
 
 </html>

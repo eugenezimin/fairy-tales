@@ -5,14 +5,17 @@
 //! files are picked up without a restart and RAM stays minimal.
 
 use anyhow::{Context, Result};
+use axum::response::Redirect;
 use axum::{
     Router,
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
     response::{Html, IntoResponse},
-    routing::get,
+    routing::{get, post},
 };
-use std::sync::Arc;
+use axum_extra::extract::cookie::{Cookie, CookieJar};
+use std::sync::{Arc, Mutex};
+use std::time::Instant;
 use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
 
@@ -20,11 +23,15 @@ use crate::config::Config;
 use crate::content;
 use crate::render;
 
+const ADMIN_COOKIE: &str = "admin_session";
+const SESSION_MINUTES: u64 = 30;
+
 /// Shared, read-only application state passed to every handler.
 /// Content is intentionally absent — it is loaded per-request.
 #[derive(Clone)]
 pub struct AppState {
     pub config: Arc<Config>,
+    pub admin_session: Arc<Mutex<Option<Instant>>>,
 }
 
 pub fn build_router(state: AppState) -> Router {
@@ -32,7 +39,9 @@ pub fn build_router(state: AppState) -> Router {
 
     Router::new()
         .route("/", get(index_handler))
+        .route("/:token", get(activate_admin_handler)) // <-- new
         .route("/article/:slug", get(article_handler))
+        .route("/admin/article", post(upload_article_handler))
         .route("/healthz", get(health_handler))
         .nest_service("/static", ServeDir::new(static_dir))
         .layer(TraceLayer::new_for_http())
@@ -56,24 +65,31 @@ pub async fn run(state: AppState) -> Result<()> {
 
 // ---------- Handlers ----------
 
-async fn index_handler(State(state): State<AppState>, headers: HeaderMap) -> impl IntoResponse {
-    serve_page(state, headers, None).await
+async fn index_handler(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    jar: CookieJar,
+) -> impl IntoResponse {
+    serve_page(state, headers, jar, None).await
 }
 
 async fn article_handler(
     State(state): State<AppState>,
     headers: HeaderMap,
+    jar: CookieJar,
     Path(slug): Path<String>,
 ) -> impl IntoResponse {
-    serve_page(state, headers, Some(slug)).await
+    serve_page(state, headers, jar, Some(slug)).await
 }
 
 async fn serve_page(
     state: AppState,
     headers: HeaderMap,
+    jar: CookieJar,
     slug: Option<String>,
 ) -> impl IntoResponse {
     let is_mobile = detect_mobile(&headers);
+    let is_admin = is_admin_session(&state, &jar);
 
     let bundle = match content::load(&state.config.content, slug.as_deref()) {
         Ok(b) => b,
@@ -83,7 +99,13 @@ async fn serve_page(
         }
     };
 
-    match render::render_index(&state.config.site, &state.config.theme, &bundle, is_mobile) {
+    match render::render_index(
+        &state.config.site,
+        &state.config.theme,
+        &bundle,
+        is_mobile,
+        is_admin,
+    ) {
         Ok(html) => Html(html).into_response(),
         Err(err) => {
             tracing::error!(error = ?err, "failed to render index");
@@ -94,6 +116,95 @@ async fn serve_page(
 
 async fn health_handler() -> &'static str {
     "ok"
+}
+
+async fn upload_article_handler(
+    State(state): State<AppState>,
+    jar: CookieJar,
+    body: String,
+) -> impl IntoResponse {
+    if !is_admin_session(&state, &jar) {
+        return (StatusCode::UNAUTHORIZED, "unauthorized").into_response();
+    }
+
+    let slug = extract_slug_from_raw(&body);
+    let filename = format!("{}.md", slug);
+    let path = state.config.content.dir.join(&filename);
+
+    // Path traversal guard
+    let canonical_content = std::fs::canonicalize(&state.config.content.dir).unwrap();
+    let canonical_path = std::fs::canonicalize(path.parent().unwrap_or(&path)).unwrap_or_default();
+    if !canonical_path.starts_with(&canonical_content) {
+        return (StatusCode::BAD_REQUEST, "invalid slug").into_response();
+    }
+
+    match std::fs::write(&path, body.as_bytes()) {
+        Ok(_) => (StatusCode::CREATED, slug).into_response(),
+        Err(e) => {
+            tracing::error!(error = ?e, "failed to write article");
+            (StatusCode::INTERNAL_SERVER_ERROR, "write failed").into_response()
+        }
+    }
+}
+
+fn extract_slug_from_raw(raw: &str) -> String {
+    let raw = raw.trim_start_matches('\n');
+    if raw.starts_with("+++") {
+        if let Some(after) = raw.get(3..) {
+            let after = after.trim_start_matches('\n');
+            if let Some(close) = after.find("\n+++") {
+                let front = &after[..close];
+                for line in front.lines() {
+                    let line = line.trim();
+                    if let Some(eq) = line.find('=') {
+                        if line[..eq].trim() == "slug" {
+                            return line[eq + 1..].trim().trim_matches('"').to_string();
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // fallback: timestamp
+    use std::time::{SystemTime, UNIX_EPOCH};
+    format!(
+        "article-{}",
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0)
+    )
+}
+
+async fn activate_admin_handler(
+    State(state): State<AppState>,
+    Path(token): Path<String>,
+    jar: CookieJar,
+) -> impl IntoResponse {
+    if token != state.config.admin.token {
+        return (StatusCode::UNAUTHORIZED, "unauthorized").into_response();
+    }
+
+    // Record activation time
+    *state.admin_session.lock().unwrap() = Some(Instant::now());
+
+    let cookie = Cookie::build((ADMIN_COOKIE, "1"))
+        .path("/")
+        .max_age(time::Duration::minutes(SESSION_MINUTES as i64))
+        .http_only(true)
+        .build();
+
+    (jar.add(cookie), Redirect::to("/")).into_response()
+}
+
+fn is_admin_session(state: &AppState, jar: &CookieJar) -> bool {
+    if jar.get(ADMIN_COOKIE).is_none() {
+        return false;
+    }
+    match *state.admin_session.lock().unwrap() {
+        Some(activated_at) => activated_at.elapsed().as_secs() < SESSION_MINUTES * 60,
+        None => false,
+    }
 }
 
 // ---------- Mobile detection ----------

@@ -116,6 +116,7 @@ struct IndexView {
     sections: Vec<SectionView>,
     year: u16,
     is_mobile: bool,
+    is_admin: bool,
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
@@ -125,6 +126,7 @@ pub fn render_index(
     theme: &ThemeConfig,
     bundle: &ContentBundle,
     is_mobile: bool,
+    is_admin: bool,
 ) -> Result<String> {
     let toc = build_toc(&bundle.article);
     let sections = build_section_views(&bundle.article);
@@ -139,6 +141,7 @@ pub fn render_index(
         sections,
         year: site.footer_year,
         is_mobile,
+        is_admin,
     }
     .render()
     .context("rendering index template")
