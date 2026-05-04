@@ -387,6 +387,7 @@
             hamburgerBtn.classList.add('is-open');
             hamburgerBtn.setAttribute('aria-expanded', 'true');
             drawer.setAttribute('aria-hidden', 'false');
+            document.documentElement.style.overflow = 'hidden';
         }
 
         function closeDrawer() {
@@ -395,6 +396,7 @@
             hamburgerBtn.classList.remove('is-open');
             hamburgerBtn.setAttribute('aria-expanded', 'false');
             drawer.setAttribute('aria-hidden', 'true');
+            document.documentElement.style.overflow = '';
             if (tocList) {
                 tocList.classList.remove('is-open');
                 tocToggle.classList.remove('is-open');
