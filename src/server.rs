@@ -23,9 +23,9 @@ use crate::config::Config;
 use crate::content;
 use crate::render;
 
-use axum::body::Body;
 use axum::extract::DefaultBodyLimit;
-use axum::http::Response;
+use axum::http::{HeaderValue, header};
+use tower_http::set_header::SetResponseHeaderLayer;
 
 use axum::middleware::{self, Next};
 
@@ -205,7 +205,7 @@ async fn list_articles_handler(State(state): State<AppState>, jar: CookieJar) ->
 async fn upload_article_handler(
     State(state): State<AppState>,
     jar: CookieJar,
-    axum::extract::BodyExtract(body): axum::extract::BodyExtract<String>,
+    body: String,
 ) -> impl IntoResponse {
     if !is_admin_session(&state, &jar) {
         return (StatusCode::UNAUTHORIZED, "unauthorized").into_response();
@@ -517,10 +517,13 @@ async fn activate_admin_handler(
         }
         *last = Some(std::time::Instant::now());
     }
-    if !constant_time_eq(token.as_bytes(), state.config.admin.token.as_bytes()) {
+    if !constant_time_eq(
+        token.as_bytes(),
+        state.config.admin.token.as_deref().unwrap_or("").as_bytes(),
+    ) {
         return (StatusCode::UNAUTHORIZED, "unauthorized").into_response();
     }
-    if token != state.config.admin.token {
+    if token != state.config.admin.token.as_deref().unwrap_or("") {
         return (StatusCode::UNAUTHORIZED, "unauthorized").into_response();
     }
 

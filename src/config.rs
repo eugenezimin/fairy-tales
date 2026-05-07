@@ -53,7 +53,7 @@ pub struct ThemeConfig {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct AdminConfig {
-    pub token: String,
+    pub token: Option<String>,
 }
 
 impl Config {
@@ -66,10 +66,34 @@ impl Config {
         let mut cfg: Config = toml::from_str(&raw)
             .with_context(|| format!("parsing TOML config at {}", path.display()))?;
 
-        cfg.validate()?;
-        if let Ok(tok) = std::env::var("APP_ADMIN_TOKEN") {
-            cfg.admin.token = tok;
+        if let Ok(contents) = std::fs::read_to_string(".env") {
+            for line in contents.lines() {
+                let line = line.trim();
+                if line.starts_with('#') || line.is_empty() {
+                    continue;
+                }
+                if let Some((k, v)) = line.split_once('=') {
+                    let k = k.trim();
+                    let v = v.trim().trim_matches('"');
+                    if std::env::var(k).is_err() {
+                        unsafe {
+                            std::env::set_var(k, v);
+                        }
+                    }
+                }
+            }
         }
+
+        if let Ok(tok) = std::env::var("APP_ADMIN_TOKEN") {
+            cfg.admin.token = Some(tok);
+        }
+
+        anyhow::ensure!(
+            cfg.admin.token.as_deref().is_some_and(|t| !t.is_empty()),
+            "admin.token must be set in config.toml or APP_ADMIN_TOKEN env var"
+        );
+
+        cfg.validate()?;
         Ok(cfg)
     }
 
