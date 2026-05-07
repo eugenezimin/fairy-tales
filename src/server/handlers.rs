@@ -3,7 +3,6 @@
 //! Each handler is a thin adapter: extract what Axum gives us, call domain /
 //! repository / render code, return a response. No business logic lives here.
 
-use askama::Template;
 use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
@@ -12,7 +11,7 @@ use axum::{
 use axum_extra::extract::cookie::CookieJar;
 
 use crate::domain::ContentBundle;
-use crate::render;
+use crate::render::{self, views::AdminArticleEntry};
 use crate::server::auth::is_admin_session;
 use crate::server::mobile;
 use crate::server::state::AppState;
@@ -45,25 +44,24 @@ async fn serve_page(
     let is_mobile = mobile::detect(&headers);
     let is_admin = is_admin_session(&state, &jar);
 
-    // Resolve the slug to render (random when None).
     let slug = match slug {
         Some(s) => s,
         None => match state.repo.random_slug() {
             Ok(s) => s,
             Err(_) => {
-                // No articles yet — show a friendly empty state.
-                match render::render_empty(
+                let view = render::empty_view(
                     &state.config.site,
                     &state.config.theme,
                     is_mobile,
                     is_admin,
-                ) {
-                    Ok(html) => return Html(html).into_response(),
+                );
+                return match render::render_page(view) {
+                    Ok(html) => Html(html).into_response(),
                     Err(err) => {
                         tracing::error!(error = ?err, "failed to render empty state");
-                        return (StatusCode::NOT_FOUND, "no articles found").into_response();
+                        (StatusCode::NOT_FOUND, "no articles found").into_response()
                     }
-                }
+                };
             }
         },
     };
@@ -85,14 +83,15 @@ async fn serve_page(
     };
 
     let bundle = ContentBundle { article, stories };
-
-    match render::render_index(
+    let view = render::article_view(
         &state.config.site,
         &state.config.theme,
         &bundle,
         is_mobile,
         is_admin,
-    ) {
+    );
+
+    match render::render_page(view) {
         Ok(html) => Html(html).into_response(),
         Err(err) => {
             tracing::error!(error = ?err, "failed to render page");
@@ -105,27 +104,14 @@ async fn serve_page(
 
 pub async fn admin_list_handler(
     State(state): State<AppState>,
+    headers: HeaderMap,
     jar: CookieJar,
 ) -> impl IntoResponse {
     if !is_admin_session(&state, &jar) {
         return (StatusCode::UNAUTHORIZED, "unauthorized").into_response();
     }
 
-    #[derive(Template)]
-    #[template(path = "admin.html")]
-    struct AdminView {
-        site_title: String,
-        theme: String,
-        year: u16,
-        articles: Vec<AdminArticleEntry>,
-    }
-
-    #[derive(Clone)]
-    struct AdminArticleEntry {
-        slug: String,
-        title: String,
-        preview: String,
-    }
+    let is_mobile = mobile::detect(&headers);
 
     let metas = match state.repo.list() {
         Ok(m) => m,
@@ -144,17 +130,12 @@ pub async fn admin_list_handler(
         })
         .collect();
 
-    match (AdminView {
-        site_title: state.config.site.title.clone(),
-        theme: state.config.theme.name.clone(),
-        year: state.config.site.footer_year,
-        articles,
-    }
-    .render())
-    {
+    let view = render::admin_view(&state.config.site, &state.config.theme, is_mobile, articles);
+
+    match render::render_page(view) {
         Ok(html) => Html(html).into_response(),
-        Err(e) => {
-            tracing::error!(error = ?e, "admin list render failed");
+        Err(err) => {
+            tracing::error!(error = ?err, "admin list render failed");
             (StatusCode::INTERNAL_SERVER_ERROR, "render error").into_response()
         }
     }

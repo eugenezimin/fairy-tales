@@ -1,0 +1,7 @@
+<ol class="mobile-toc-list" id="mobile-toc-list">
+    {% for entry in toc %}
+    <li class="toc__item toc__item--{{ entry.level }}">
+        <a class="toc__link" href="#{{ entry.anchor }}">{{ entry.label }}</a>
+    </li>
+    {% endfor %}
+</ol>

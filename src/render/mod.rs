@@ -1,7 +1,8 @@
 //! HTML rendering.
 //!
-//! Translates the domain model into Askama view models and renders the
-//! template. The only public entry point is `render_index`.
+//! Translates the domain model into a single `PageView` and renders the
+//! one shared `index.html` frame. The frame includes different partials
+//! depending on `PageView::content`.
 
 pub mod builder;
 pub mod views;
@@ -12,78 +13,117 @@ use askama::Template;
 use crate::config::{SiteConfig, ThemeConfig};
 use crate::domain::{ContentBundle, StoryHeader};
 use crate::render::builder::{build_section_views, build_toc};
-use crate::render::views::{SectionView, TocEntry};
+use crate::render::views::{AdminArticleEntry, PageContent, PageView};
 
 // ── Template ──────────────────────────────────────────────────────────────────
 
 #[derive(Template)]
 #[template(path = "index.html")]
-struct IndexView {
+struct PageTemplate {
+    // Flatten PageView fields — Askama needs direct field access.
     site_title: String,
     page_title: String,
     article_slug: String,
     theme: String,
-    stories: Vec<StoryHeader>,
-    toc: Vec<TocEntry>,
-    sections: Vec<SectionView>,
     year: u16,
     is_mobile: bool,
     is_admin: bool,
+    /// `"article"` | `"empty"` | `"admin"`
+    content: String,
+    stories: Vec<StoryHeader>,
+    toc: Vec<crate::render::views::TocEntry>,
+    sections: Vec<crate::render::views::SectionView>,
+    admin_articles: Vec<AdminArticleEntry>,
 }
 
-// ADD after the existing IndexView template struct and render_index fn:
-
-#[derive(Template)]
-#[template(path = "empty.html")]
-struct EmptyView {
-    site_title: String,
-    theme: String,
-    year: u16,
-    is_mobile: bool,
-    is_admin: bool,
+impl PageTemplate {
+    fn from_view(view: PageView) -> Self {
+        Self {
+            site_title: view.site_title,
+            page_title: view.page_title,
+            article_slug: view.article_slug,
+            theme: view.theme,
+            year: view.year,
+            is_mobile: view.is_mobile,
+            is_admin: view.is_admin,
+            content: view.content,
+            stories: view.stories,
+            toc: view.toc,
+            sections: view.sections,
+            admin_articles: view.admin_articles,
+        }
+    }
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
-pub fn render_index(
+/// Render any page mode through the single shared frame.
+pub fn render_page(view: PageView) -> Result<String> {
+    PageTemplate::from_view(view)
+        .render()
+        .context("rendering page template")
+}
+
+// ── View constructors ─────────────────────────────────────────────────────────
+
+/// Build a `PageView` for a fully-loaded article page.
+pub fn article_view(
     site: &SiteConfig,
     theme: &ThemeConfig,
     bundle: &ContentBundle,
     is_mobile: bool,
     is_admin: bool,
-) -> Result<String> {
-    let toc = build_toc(&bundle.article);
-    let sections = build_section_views(&bundle.article);
-
-    IndexView {
-        site_title: site.title.clone(),
-        page_title: bundle.article.title.clone(),
-        article_slug: bundle.article.slug.clone(),
-        theme: theme.name.clone(),
-        stories: bundle.stories.clone(),
-        toc,
-        sections,
-        year: site.footer_year,
+) -> PageView {
+    let mut view = PageView::base(
+        site.title.clone(),
+        bundle.article.title.clone(),
+        theme.name.clone(),
+        site.footer_year,
         is_mobile,
         is_admin,
-    }
-    .render()
-    .context("rendering index template")
+        PageContent::Article,
+    );
+    view.article_slug = bundle.article.slug.clone();
+    view.toc = build_toc(&bundle.article);
+    view.sections = build_section_views(&bundle.article);
+    view.stories = bundle.stories.clone();
+    view
 }
 
-pub fn render_empty(
+/// Build a `PageView` for the empty-state page (no articles yet).
+pub fn empty_view(
     site: &SiteConfig,
     theme: &ThemeConfig,
     is_mobile: bool,
     is_admin: bool,
-) -> Result<String> {
-    EmptyView {
-        site_title: site.title.clone(),
-        theme: theme.name.clone(),
-        year: site.footer_year,
+) -> PageView {
+    PageView::base(
+        site.title.clone(),
+        site.title.clone(),
+        theme.name.clone(),
+        site.footer_year,
         is_mobile,
         is_admin,
-    }
-    .render()
-    .context("rendering empty template")
+        PageContent::Empty,
+    )
+}
+
+/// Build a `PageView` for the admin article list page.
+pub fn admin_view(
+    site: &SiteConfig,
+    theme: &ThemeConfig,
+    is_mobile: bool,
+    articles: Vec<AdminArticleEntry>,
+) -> PageView {
+    let mut view = PageView::base(
+        site.title.clone(),
+        "Articles".to_string(),
+        theme.name.clone(),
+        site.footer_year,
+        is_mobile,
+        true,
+        PageContent::Admin,
+    );
+    view.admin_articles = articles;
+    view
 }

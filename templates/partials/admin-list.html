@@ -1,0 +1,30 @@
+<article class="layout__main">
+    <h2 class="admin-heading">Articles</h2>
+
+    {% if admin_articles.is_empty() %}
+    <div class="empty-state">No articles found in the content directory.</div>
+    {% else %}
+    <ul class="article-list" id="article-list">
+        {% for article in admin_articles %}
+        <li class="article-entry" id="entry-{{ article.slug }}">
+            <div class="article-entry__body">
+                <div class="article-entry__title">
+                    <a href="/article/{{ article.slug }}">{{ article.title }}</a>
+                </div>
+                <div class="article-entry__slug">{{ article.slug }}.md</div>
+                {% if !article.preview.is_empty() %}
+                <div class="article-entry__preview">{{ article.preview }}</div>
+                {% endif %}
+            </div>
+            <button class="delete-btn"
+                    data-slug="{{ article.slug }}"
+                    aria-label="Delete {{ article.title }}">
+                Delete
+            </button>
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+</article>
+
+<div class="toast" id="toast"></div>

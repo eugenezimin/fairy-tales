@@ -1,8 +1,95 @@
 //! View models consumed by Askama templates.
 //!
-//! These structs are intentionally dumb — no logic, only data. They exist
-//! to decouple the template from the domain model so neither side needs to
-//! know about the other's internals.
+//! All three page modes (article, empty, admin) share a single `PageView`
+//! struct. Fields unused in a given mode are left empty — the template only
+//! renders what the active content partial touches.
+
+// ── Page mode ─────────────────────────────────────────────────────────────────
+
+/// Which content slot the single-frame template should render.
+#[derive(Debug, Clone, PartialEq)]
+pub enum PageContent {
+    Article,
+    Empty,
+    Admin,
+}
+
+impl PageContent {
+    /// String tag used in the template for `{% if content == "..." %}` branches
+    /// and as the `page--{mode}` body class.
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            PageContent::Article => "article",
+            PageContent::Empty => "empty",
+            PageContent::Admin => "admin",
+        }
+    }
+}
+
+// ── Top-level page view ───────────────────────────────────────────────────────
+
+/// Everything the single `index.html` frame needs, for any page mode.
+pub struct PageView {
+    // ── Always present ────────────────────────────────────────────────────────
+    pub site_title: String,
+    pub page_title: String,
+    pub theme: String,
+    pub year: u16,
+    pub is_mobile: bool,
+    pub is_admin: bool,
+    /// Drives `{% if content == "..." %}` branches in the template.
+    pub content: String,
+
+    // ── Article mode only (empty otherwise) ───────────────────────────────────
+    pub article_slug: String,
+    pub sections: Vec<SectionView>,
+    pub toc: Vec<TocEntry>,
+    pub stories: Vec<StoryHeader>,
+
+    // ── Admin list mode only (empty otherwise) ────────────────────────────────
+    pub admin_articles: Vec<AdminArticleEntry>,
+}
+
+impl PageView {
+    /// Convenience: build the shared fields that every mode needs.
+    pub fn base(
+        site_title: String,
+        page_title: String,
+        theme: String,
+        year: u16,
+        is_mobile: bool,
+        is_admin: bool,
+        content: PageContent,
+    ) -> Self {
+        Self {
+            site_title,
+            page_title,
+            theme,
+            year,
+            is_mobile,
+            is_admin,
+            content: content.as_str().to_string(),
+            article_slug: String::new(),
+            sections: Vec::new(),
+            toc: Vec::new(),
+            stories: Vec::new(),
+            admin_articles: Vec::new(),
+        }
+    }
+}
+
+// ── Admin article entry ───────────────────────────────────────────────────────
+
+/// Lightweight row shown in the admin article list.
+/// Moved here from the inline struct in `handlers.rs`.
+#[derive(Clone)]
+pub struct AdminArticleEntry {
+    pub slug: String,
+    pub title: String,
+    pub preview: String,
+}
+
+// ── TOC ───────────────────────────────────────────────────────────────────────
 
 /// One entry in the table of contents.
 #[derive(Clone)]
@@ -12,6 +99,8 @@ pub struct TocEntry {
     /// `"h2"` | `"h3"` | `"h4"` | `"h5"` | `"h6"`
     pub level: String,
 }
+
+// ── Inlines ───────────────────────────────────────────────────────────────────
 
 /// A rendered inline node.
 ///
@@ -64,6 +153,8 @@ impl InlineView {
     }
 }
 
+// ── Blocks ────────────────────────────────────────────────────────────────────
+
 /// A block-level view node.
 ///
 /// `kind`: `"paragraph"` | `"ad"` | `"list"` | `"table"` |
@@ -110,6 +201,8 @@ pub struct ListItemView {
     pub blocks: Vec<BlockView>,
 }
 
+// ── Sections ──────────────────────────────────────────────────────────────────
+
 /// A section view — maps 1-to-1 with `domain::Section`.
 #[derive(Clone)]
 pub struct SectionView {
@@ -119,3 +212,7 @@ pub struct SectionView {
     pub heading_text: String,
     pub blocks: Vec<BlockView>,
 }
+
+// ── Re-export domain type used in PageView ────────────────────────────────────
+
+pub use crate::domain::StoryHeader;

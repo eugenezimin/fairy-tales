@@ -1,0 +1,95 @@
+<div id="admin-panel" style="display:none">
+    <div id="admin-panel__inner">
+        <h2>Upload New Article</h2>
+        <p id="admin-status"></p>
+        <div id="admin-dropzone">
+            <p>Drop a <code>.md</code> file and any images here, or</p>
+            <label id="admin-file-label">
+                Choose files
+                <input type="file" id="admin-file" accept=".md,image/*" multiple>
+            </label>
+            <ul id="admin-file-list"
+                style="list-style:none;margin-top:.75rem;font-size:.85rem;color:var(--color-muted);text-align:left;padding:0">
+            </ul>
+        </div>
+        <div id="admin-actions">
+            <button id="admin-submit" disabled>Publish</button>
+            <button id="admin-close">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<style>
+    #admin-panel {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.55);
+        z-index: 9000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    #admin-panel__inner {
+        background: var(--color-article-bg);
+        border: 2px solid var(--color-accent);
+        border-radius: var(--radius);
+        padding: 2rem;
+        width: min(520px, 92vw);
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+    }
+    #admin-panel h2 {
+        font-family: var(--font-heading);
+        color: var(--color-accent);
+        margin: 0;
+    }
+    #admin-dropzone {
+        border: 2px dashed var(--color-border);
+        border-radius: var(--radius);
+        padding: 2rem 1rem;
+        text-align: center;
+        transition: border-color .2s, background .2s;
+    }
+    #admin-dropzone.drag-over {
+        border-color: var(--color-accent);
+        background: var(--color-hover);
+    }
+    #admin-file-label {
+        display: inline-block;
+        margin-top: .75rem;
+        background: var(--color-accent);
+        color: #fff;
+        padding: .45rem 1.2rem;
+        border-radius: var(--radius);
+        cursor: pointer;
+        font-size: .9rem;
+    }
+    #admin-file { display: none; }
+    #admin-actions { display: flex; gap: 1rem; }
+    #admin-submit {
+        background: var(--color-accent);
+        color: #fff;
+        border: none;
+        border-radius: var(--radius);
+        padding: .6rem 1.5rem;
+        font-size: 1rem;
+        cursor: pointer;
+    }
+    #admin-submit:disabled { opacity: .45; cursor: default; }
+    #admin-close {
+        background: none;
+        color: var(--color-muted);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius);
+        padding: .6rem 1.5rem;
+        font-size: 1rem;
+        cursor: pointer;
+    }
+    #admin-status {
+        font-size: .9rem;
+        color: var(--color-muted);
+        min-height: 1.2em;
+    }
+</style>
