@@ -157,9 +157,7 @@ pub fn load(cfg: &ContentConfig, requested_slug: Option<&str>) -> Result<Content
             let snippet = if i == chosen_idx {
                 String::new() // filled in after full parse below
             } else {
-                parse_article_file(&m.path)
-                    .map(|a| first_text_snippet(&a))
-                    .unwrap_or_default()
+                cheap_snippet(&m.path)
             };
             StoryHeader {
                 title: m.title.clone(),
@@ -180,6 +178,41 @@ pub fn load(cfg: &ContentConfig, requested_slug: Option<&str>) -> Result<Content
     Ok(ContentBundle { article, stories })
 }
 
+fn cheap_snippet(path: &Path) -> String {
+    let raw = match std::fs::read_to_string(path) {
+        Ok(r) => r,
+        Err(_) => return String::new(),
+    };
+    let (_, body) = split_front_matter(&raw);
+    let mut past_h1 = false;
+    for line in body.lines() {
+        let t = line.trim();
+        if !past_h1 {
+            if t.starts_with("# ") {
+                past_h1 = true;
+            }
+            continue;
+        }
+        if t.is_empty() || t.starts_with('#') || t.starts_with("<!--") || t.starts_with("+++") {
+            continue;
+        }
+        // Strip simple markdown: bold, italic markers
+        let clean: String = t
+            .chars()
+            .filter(|c| !matches!(c, '*' | '_' | '`'))
+            .collect();
+        let clean = clean.trim().to_string();
+        if clean.is_empty() {
+            continue;
+        }
+        return if clean.len() > 120 {
+            format!("{}…", clean.chars().take(120).collect::<String>())
+        } else {
+            clean
+        };
+    }
+    String::new()
+}
 // ── Scanning ──────────────────────────────────────────────────────────────────
 
 struct ArticleMeta {
@@ -496,13 +529,20 @@ fn random_index(len: usize) -> usize {
 }
 
 fn shuffle<T>(slice: &mut [T]) {
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
     use std::time::{SystemTime, UNIX_EPOCH};
-    let seed = SystemTime::now()
+
+    let mut h = DefaultHasher::new();
+    SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_nanos() as u64)
-        .unwrap_or(12345);
+        .map(|d| d.as_nanos())
+        .unwrap_or(0)
+        .hash(&mut h);
+    std::thread::current().id().hash(&mut h);
+    let mut state = h.finish();
+
     let n = slice.len();
-    let mut state = seed;
     for i in (1..n).rev() {
         state ^= state << 13;
         state ^= state >> 7;

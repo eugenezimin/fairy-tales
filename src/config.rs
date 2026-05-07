@@ -63,10 +63,13 @@ impl Config {
         let raw = std::fs::read_to_string(path)
             .with_context(|| format!("reading config file at {}", path.display()))?;
 
-        let cfg: Config = toml::from_str(&raw)
+        let mut cfg: Config = toml::from_str(&raw)
             .with_context(|| format!("parsing TOML config at {}", path.display()))?;
 
         cfg.validate()?;
+        if let Ok(tok) = std::env::var("APP_ADMIN_TOKEN") {
+            cfg.admin.token = tok;
+        }
         Ok(cfg)
     }
 

@@ -23,6 +23,13 @@ use crate::config::Config;
 use crate::content;
 use crate::render;
 
+use axum::body::Body;
+use axum::extract::DefaultBodyLimit;
+use axum::http::Response;
+
+use axum::middleware::{self, Next};
+
+const MAX_UPLOAD_BYTES: usize = 512 * 1024; // 512 KB
 const ADMIN_COOKIE: &str = "admin_session";
 const SESSION_MINUTES: u64 = 30;
 
@@ -32,6 +39,23 @@ const SESSION_MINUTES: u64 = 30;
 pub struct AppState {
     pub config: Arc<Config>,
     pub admin_session: Arc<Mutex<Option<Instant>>>,
+    pub last_auth_attempt: Arc<Mutex<Option<std::time::Instant>>>,
+}
+
+async fn security_headers(request: axum::extract::Request, next: Next) -> impl IntoResponse {
+    let mut response = next.run(request).await;
+    let headers = response.headers_mut();
+    headers.insert("X-Content-Type-Options", "nosniff".parse().unwrap());
+    headers.insert("X-Frame-Options", "DENY".parse().unwrap());
+    headers.insert(
+        "Referrer-Policy",
+        "strict-origin-when-cross-origin".parse().unwrap(),
+    );
+    headers.insert(
+        "Content-Security-Policy",
+        "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data: https:".parse().unwrap(),
+    );
+    response
 }
 
 pub fn build_router(state: AppState) -> Router {
@@ -39,10 +63,13 @@ pub fn build_router(state: AppState) -> Router {
 
     Router::new()
         .route("/", get(index_handler))
-        .route("/:token", get(activate_admin_handler)) // <-- new
+        .route("/auth/:token", get(activate_admin_handler))
         .route("/article/:slug", get(article_handler))
         .route("/admin", get(admin_list_handler))
-        .route("/admin/article", post(upload_article_handler))
+        .route(
+            "/admin/article",
+            post(upload_article_handler).layer(DefaultBodyLimit::max(512 * 1024)),
+        )
         .route(
             "/admin/article/:slug",
             axum::routing::delete(delete_article_handler),
@@ -50,8 +77,28 @@ pub fn build_router(state: AppState) -> Router {
         .route("/admin/logout", get(logout_handler))
         .route("/admin/articles", get(list_articles_handler))
         .route("/healthz", get(health_handler))
-        .nest_service("/static", ServeDir::new(static_dir))
-        .layer(TraceLayer::new_for_http())
+        .nest_service(
+            "/static",
+            tower::ServiceBuilder::new()
+                .layer(SetResponseHeaderLayer::if_not_present(
+                    header::CACHE_CONTROL,
+                    HeaderValue::from_static("public, max-age=31536000, immutable"),
+                ))
+                .service(ServeDir::new(static_dir)),
+        )
+        .layer(
+            TraceLayer::new_for_http().make_span_with(|request: &axum::http::Request<_>| {
+                // Redact /auth/* paths so the token never appears in logs
+                let path = request.uri().path();
+                let logged_path = if path.starts_with("/auth/") {
+                    "/auth/[REDACTED]"
+                } else {
+                    path
+                };
+                tracing::info_span!("http", method = %request.method(), path = logged_path)
+            }),
+        )
+        .layer(middleware::from_fn(security_headers))
         .with_state(state)
 }
 
@@ -65,9 +112,26 @@ pub async fn run(state: AppState) -> Result<()> {
 
     tracing::info!("listening on http://{addr}");
     axum::serve(listener, router)
+        .with_graceful_shutdown(shutdown_signal())
         .await
         .context("axum server error")?;
     Ok(())
+}
+
+async fn shutdown_signal() {
+    use tokio::signal;
+    let ctrl_c = async { signal::ctrl_c().await.expect("failed to listen for ctrl_c") };
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install SIGTERM handler")
+            .recv()
+            .await;
+    };
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+    tokio::select! { _ = ctrl_c => {}, _ = terminate => {} }
+    tracing::info!("shutdown signal received");
 }
 
 // ---------- Handlers ----------
@@ -141,7 +205,7 @@ async fn list_articles_handler(State(state): State<AppState>, jar: CookieJar) ->
 async fn upload_article_handler(
     State(state): State<AppState>,
     jar: CookieJar,
-    body: String,
+    axum::extract::BodyExtract(body): axum::extract::BodyExtract<String>,
 ) -> impl IntoResponse {
     if !is_admin_session(&state, &jar) {
         return (StatusCode::UNAUTHORIZED, "unauthorized").into_response();
@@ -153,7 +217,10 @@ async fn upload_article_handler(
 
     // Path traversal guard
     let canonical_content = std::fs::canonicalize(&state.config.content.dir).unwrap();
-    let canonical_path = std::fs::canonicalize(path.parent().unwrap_or(&path)).unwrap_or_default();
+    let canonical_path = match std::fs::canonicalize(path.parent().unwrap_or(&path)) {
+        Ok(p) => p,
+        Err(_) => return (StatusCode::BAD_REQUEST, "invalid path").into_response(),
+    };
     if !canonical_path.starts_with(&canonical_content) {
         return (StatusCode::BAD_REQUEST, "invalid slug").into_response();
     }
@@ -441,6 +508,18 @@ async fn activate_admin_handler(
     Path(token): Path<String>,
     jar: CookieJar,
 ) -> impl IntoResponse {
+    {
+        let mut last = state.last_auth_attempt.lock().unwrap();
+        if let Some(t) = *last {
+            if t.elapsed().as_secs() < 2 {
+                return (StatusCode::TOO_MANY_REQUESTS, "slow down").into_response();
+            }
+        }
+        *last = Some(std::time::Instant::now());
+    }
+    if !constant_time_eq(token.as_bytes(), state.config.admin.token.as_bytes()) {
+        return (StatusCode::UNAUTHORIZED, "unauthorized").into_response();
+    }
     if token != state.config.admin.token {
         return (StatusCode::UNAUTHORIZED, "unauthorized").into_response();
     }
@@ -455,6 +534,16 @@ async fn activate_admin_handler(
         .build();
 
     (jar.add(cookie), Redirect::to("/")).into_response()
+}
+
+fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+    a.iter()
+        .zip(b.iter())
+        .fold(0u8, |acc, (x, y)| acc | (x ^ y))
+        == 0
 }
 
 fn is_admin_session(state: &AppState, jar: &CookieJar) -> bool {
