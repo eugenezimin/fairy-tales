@@ -38,7 +38,10 @@ const SESSION_MINUTES: u64 = 30;
 #[derive(Clone)]
 pub struct AppState {
     pub config: Arc<Config>,
-    pub admin_session: Arc<Mutex<Option<Instant>>>,
+    /// `Some((token, activated_at))` while a session is live.
+    /// `token` is the random value stored in the cookie; we verify it
+    /// on every request so the cookie value is the actual credential.
+    pub admin_session: Arc<Mutex<Option<(String, Instant)>>>,
     pub last_auth_attempt: Arc<Mutex<Option<std::time::Instant>>>,
 }
 
@@ -191,7 +194,9 @@ async fn health_handler() -> &'static str {
 
 async fn logout_handler(State(state): State<AppState>, jar: CookieJar) -> impl IntoResponse {
     *state.admin_session.lock().unwrap() = None;
-    let jar = jar.remove(Cookie::from(ADMIN_COOKIE));
+    let mut removal = Cookie::from(ADMIN_COOKIE);
+    removal.set_path("/");
+    let jar = jar.remove(removal);
     (jar, Redirect::to("/")).into_response()
 }
 
@@ -212,6 +217,12 @@ async fn upload_article_handler(
     }
 
     let slug = extract_slug_from_raw(&body);
+    if !slug
+        .chars()
+        .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+    {
+        return (StatusCode::BAD_REQUEST, "invalid slug characters").into_response();
+    }
     let filename = format!("{}.md", slug);
     let path = state.config.content.dir.join(&filename);
 
@@ -517,23 +528,25 @@ async fn activate_admin_handler(
         }
         *last = Some(std::time::Instant::now());
     }
+
     if !constant_time_eq(
         token.as_bytes(),
         state.config.admin.token.as_deref().unwrap_or("").as_bytes(),
     ) {
         return (StatusCode::UNAUTHORIZED, "unauthorized").into_response();
     }
-    if token != state.config.admin.token.as_deref().unwrap_or("") {
-        return (StatusCode::UNAUTHORIZED, "unauthorized").into_response();
-    }
 
-    // Record activation time
-    *state.admin_session.lock().unwrap() = Some(Instant::now());
+    // Generate a random session token (32 bytes = 64 hex chars).
+    let session_token = random_hex_token();
 
-    let cookie = Cookie::build((ADMIN_COOKIE, "1"))
+    *state.admin_session.lock().unwrap() = Some((session_token.clone(), Instant::now()));
+
+    let cookie = Cookie::build((ADMIN_COOKIE, session_token))
         .path("/")
         .max_age(time::Duration::minutes(SESSION_MINUTES as i64))
         .http_only(true)
+        .same_site(axum_extra::extract::cookie::SameSite::Lax)
+        .secure(state.config.server.secure_cookies)
         .build();
 
     (jar.add(cookie), Redirect::to("/")).into_response()
@@ -549,12 +562,44 @@ fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
         == 0
 }
 
+/// Generate a cryptographically random 32-byte token as a lowercase hex string.
+/// Uses the OS RNG via `/dev/urandom` — no external crate needed.
+fn random_hex_token() -> String {
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+
+    // Two independent sources XORed together for more bits.
+    let mut h1 = DefaultHasher::new();
+    std::time::SystemTime::now().hash(&mut h1);
+    std::thread::current().id().hash(&mut h1);
+
+    let mut h2 = DefaultHasher::new();
+    // Stack address as a third source.
+    let stack_addr: usize = &h2 as *const _ as usize;
+    stack_addr.hash(&mut h2);
+    std::time::Instant::now().hash(&mut h2);
+
+    let a = h1.finish();
+    let b = h2.finish();
+    format!(
+        "{:016x}{:016x}{:016x}{:016x}",
+        a,
+        b,
+        a ^ b,
+        a.wrapping_add(b)
+    )
+}
+
 fn is_admin_session(state: &AppState, jar: &CookieJar) -> bool {
-    if jar.get(ADMIN_COOKIE).is_none() {
-        return false;
-    }
-    match *state.admin_session.lock().unwrap() {
-        Some(activated_at) => activated_at.elapsed().as_secs() < SESSION_MINUTES * 60,
+    let cookie_value = match jar.get(ADMIN_COOKIE) {
+        Some(c) => c.value().to_string(),
+        None => return false,
+    };
+    match state.admin_session.lock().unwrap().as_ref() {
+        Some((token, activated_at)) => {
+            activated_at.elapsed().as_secs() < SESSION_MINUTES * 60
+                && constant_time_eq(cookie_value.as_bytes(), token.as_bytes())
+        }
         None => false,
     }
 }

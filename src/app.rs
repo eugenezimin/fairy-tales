@@ -29,7 +29,7 @@ impl Application {
 
         let state = AppState {
             config: Arc::new(config),
-            admin_session: Arc::new(Mutex::new(None)),
+            admin_session: Arc::new(Mutex::new(None::<(String, std::time::Instant)>)),
             last_auth_attempt: Arc::new(Mutex::new(None)),
         };
 

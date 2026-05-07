@@ -12,8 +12,28 @@ use anyhow::Result;
 use crate::app::Application;
 use crate::config::Config;
 
+fn load_dotenv() {
+    let Ok(contents) = std::fs::read_to_string(".env") else {
+        return;
+    };
+    for line in contents.lines() {
+        let line = line.trim();
+        if line.starts_with('#') || line.is_empty() {
+            continue;
+        }
+        if let Some((k, v)) = line.split_once('=') {
+            let k = k.trim();
+            let v = v.trim().trim_matches('"');
+            if std::env::var(k).is_err() {
+                unsafe { std::env::set_var(k, v) };
+            }
+        }
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
+    load_dotenv();
     init_tracing();
 
     let cli_arg = std::env::args().nth(1);

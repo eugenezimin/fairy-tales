@@ -22,8 +22,8 @@ pub struct Config {
 pub struct ServerConfig {
     pub host: IpAddr,
     pub port: u16,
-    /// Path to serve static assets from (CSS, images, etc.)
     pub static_dir: PathBuf,
+    pub secure_cookies: bool,
 }
 
 impl ServerConfig {
@@ -65,24 +65,6 @@ impl Config {
 
         let mut cfg: Config = toml::from_str(&raw)
             .with_context(|| format!("parsing TOML config at {}", path.display()))?;
-
-        if let Ok(contents) = std::fs::read_to_string(".env") {
-            for line in contents.lines() {
-                let line = line.trim();
-                if line.starts_with('#') || line.is_empty() {
-                    continue;
-                }
-                if let Some((k, v)) = line.split_once('=') {
-                    let k = k.trim();
-                    let v = v.trim().trim_matches('"');
-                    if std::env::var(k).is_err() {
-                        unsafe {
-                            std::env::set_var(k, v);
-                        }
-                    }
-                }
-            }
-        }
 
         if let Ok(tok) = std::env::var("APP_ADMIN_TOKEN") {
             cfg.admin.token = Some(tok);
