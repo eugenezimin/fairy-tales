@@ -1,10 +1,10 @@
-//! Entry point. Initializes logging, resolves the config path, hands
-//! everything off to `Application`. Keep this thin.
+//! Entry point. Initialises logging, resolves config path, starts the app.
 
 mod app;
 mod config;
-mod content;
+mod domain;
 mod render;
+mod repository;
 mod server;
 
 use anyhow::Result;
@@ -45,9 +45,7 @@ async fn main() -> Result<()> {
 
 fn init_tracing() {
     use tracing_subscriber::{EnvFilter, fmt};
-
     let filter = EnvFilter::try_from_default_env()
         .unwrap_or_else(|_| EnvFilter::new("info,tower_http=info"));
-
     fmt().with_env_filter(filter).init();
 }
