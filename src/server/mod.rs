@@ -37,13 +37,15 @@ use axum::extract::DefaultBodyLimit;
 pub fn build_router(state: AppState) -> Router {
     let static_dir = state.config.server.static_dir.clone();
 
+    tracing::info!("registering routes");
+
     Router::new()
         // Public
         .route("/", get(index_handler))
-        .route("/article/{slug}", get(article_handler))
+        .route("/article/:slug", get(article_handler))
         .route("/healthz", get(health_handler))
         // Auth
-        .route("/auth/{token}", get(activate_handler))
+        .route("/auth/:token", get(activate_handler))
         .route("/admin/logout", get(logout_handler))
         // Admin
         .route("/admin", get(admin_list_handler))
@@ -52,7 +54,7 @@ pub fn build_router(state: AppState) -> Router {
             "/admin/article",
             post(upload_article_handler).layer(DefaultBodyLimit::max(512 * 1024)),
         )
-        .route("/admin/article/{slug}", delete(delete_article_handler))
+        .route("/admin/article/:slug", delete(delete_article_handler))
         // Static files with long-lived cache headers
         .nest_service(
             "/static",
@@ -63,6 +65,18 @@ pub fn build_router(state: AppState) -> Router {
                 ))
                 .service(ServeDir::new(static_dir)),
         )
+        // Catch-all: log exactly what path missed all routes
+        .fallback(|req: axum::http::Request<axum::body::Body>| async move {
+            tracing::warn!(
+                method = %req.method(),
+                path   = %req.uri().path(),
+                "no route matched"
+            );
+            (
+                axum::http::StatusCode::NOT_FOUND,
+                format!("404 — no route for {} {}", req.method(), req.uri().path()),
+            )
+        })
         // Tracing (redacts auth tokens from logs)
         .layer(
             TraceLayer::new_for_http().make_span_with(|request: &axum::http::Request<_>| {
