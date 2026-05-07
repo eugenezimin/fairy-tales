@@ -2,18 +2,90 @@
     'use strict';
 
     var panel = document.getElementById('admin-panel');
-    if (!panel) return; // not an admin session, nothing to do
+    if (!panel) return;
 
     var dropzone = document.getElementById('admin-dropzone');
     var fileInput = document.getElementById('admin-file');
-    var status = document.getElementById('admin-status');
+    var statusBar = document.getElementById('admin-status-bar');
+    var statusIcon = document.getElementById('admin-status-icon');
+    var statusText = document.getElementById('admin-status');
     var submitBtn = document.getElementById('admin-submit');
     var closeBtn = document.getElementById('admin-close');
     var trigger = document.getElementById('upload-trigger');
 
-    // { name: File } for images keyed by original filename
     var chosenMd = null;
-    var chosenImages = []; // [{file, origName}]
+    var chosenImages = [];
+
+    // ── Status helpers ──────────────────────────────────────────────────────
+
+    function setStatus(msg, type) {
+        // type: 'info' | 'error' | 'success' | '' (hidden)
+        statusBar.className = '';
+        if (!msg) {
+            statusBar.style.display = 'none';
+            return;
+        }
+        statusBar.style.display = 'flex';
+        statusBar.classList.add('visible', 'status-' + (type || 'info'));
+
+        var icons = { error: '✗', success: '✓', info: 'ℹ' };
+        statusIcon.textContent = icons[type] || '';
+        statusText.textContent = msg;
+    }
+
+    // ── File list rendering ─────────────────────────────────────────────────
+
+    function formatSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    function renderFileList() {
+        var list = document.getElementById('admin-file-list');
+        if (!list) return;
+        list.innerHTML = '';
+
+        var hasFiles = chosenMd || chosenImages.length > 0;
+        dropzone.classList.toggle('has-files', hasFiles);
+
+        if (chosenMd) {
+            var li = document.createElement('li');
+            li.className = 'file-md';
+            li.innerHTML =
+                '<span class="file-icon">📄</span>' +
+                '<span class="file-name">' + escHtml(chosenMd.name) + '</span>' +
+                '<span class="file-size">' + formatSize(chosenMd.size) + '</span>';
+            list.appendChild(li);
+        }
+
+        chosenImages.forEach(function (img) {
+            var li = document.createElement('li');
+            li.className = 'file-img';
+            li.innerHTML =
+                '<span class="file-icon">🖼</span>' +
+                '<span class="file-name">' + escHtml(img.file.name) + '</span>' +
+                '<span class="file-size">' + formatSize(img.file.size) + '</span>';
+            list.appendChild(li);
+        });
+    }
+
+    function escHtml(str) {
+        return str.replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
+
+    // ── Panel lifecycle ─────────────────────────────────────────────────────
+
+    function resetPanel() {
+        setStatus('');
+        fileInput.value = '';
+        chosenMd = null;
+        chosenImages = [];
+        submitBtn.disabled = true;
+        renderFileList();
+    }
 
     if (trigger) {
         trigger.addEventListener('click', function (e) {
@@ -26,60 +98,45 @@
     closeBtn.addEventListener('click', function () { panel.style.display = 'none'; });
     panel.addEventListener('click', function (e) { if (e.target === panel) panel.style.display = 'none'; });
 
-    function resetPanel() {
-        status.textContent = '';
-        fileInput.value = '';
-        chosenMd = null;
-        chosenImages = [];
-        submitBtn.disabled = true;
-        renderFileList();
-    }
-
-    function renderFileList() {
-        var list = document.getElementById('admin-file-list');
-        if (!list) return;
-        list.innerHTML = '';
-        if (chosenMd) {
-            var li = document.createElement('li');
-            li.textContent = '📄 ' + chosenMd.name;
-            list.appendChild(li);
-        }
-        chosenImages.forEach(function (img) {
-            var li = document.createElement('li');
-            li.textContent = '🖼 ' + img.file.name;
-            list.appendChild(li);
-        });
-    }
+    // ── File intake ─────────────────────────────────────────────────────────
 
     function processFiles(files) {
         Array.from(files).forEach(function (f) {
             if (f.name.endsWith('.md')) {
                 chosenMd = f;
             } else if (/\.(jpe?g|png|gif|webp|svg|avif)$/i.test(f.name)) {
-                // deduplicate by name
                 if (!chosenImages.find(function (i) { return i.file.name === f.name; })) {
                     chosenImages.push({ file: f, origName: f.name });
                 }
             }
         });
-        status.textContent = '';
+
+        setStatus('');
         submitBtn.disabled = !chosenMd;
         renderFileList();
+
         if (!chosenMd && files.length) {
-            status.textContent = 'Please include a .md file.';
+            setStatus('Please include a .md file.', 'error');
         }
     }
 
     fileInput.addEventListener('change', function () { processFiles(fileInput.files); });
-    dropzone.addEventListener('dragover', function (e) { e.preventDefault(); dropzone.classList.add('drag-over'); });
-    dropzone.addEventListener('dragleave', function () { dropzone.classList.remove('drag-over'); });
+
+    dropzone.addEventListener('dragover', function (e) {
+        e.preventDefault();
+        dropzone.classList.add('drag-over');
+    });
+    dropzone.addEventListener('dragleave', function () {
+        dropzone.classList.remove('drag-over');
+    });
     dropzone.addEventListener('drop', function (e) {
         e.preventDefault();
         dropzone.classList.remove('drag-over');
         processFiles(e.dataTransfer.files);
     });
 
-    /* -- Slug derivation (mirrors server logic) -- */
+    // ── Slug derivation ─────────────────────────────────────────────────────
+
     function slugify(text) {
         return text.toLowerCase()
             .replace(/[^a-z0-9]+/g, '-')
@@ -88,19 +145,18 @@
     }
 
     function deriveSlug(mdText) {
-        // front-matter slug field
         var fmMatch = mdText.match(/^\+{3}\n([\s\S]*?)\n\+{3}/);
         if (fmMatch) {
             var slugLine = fmMatch[1].match(/^\s*slug\s*=\s*"?([^"\n]+)"?/m);
             if (slugLine) return slugLine[1].trim();
         }
-        // first H1
         var h1 = mdText.match(/^#\s+(.+)$/m);
         if (h1) return slugify(h1[1].trim());
         return 'article-' + Date.now();
     }
 
-    /* -- Rewrite image references in markdown -- */
+    // ── Image rewriting ─────────────────────────────────────────────────────
+
     function rewriteImageRefs(mdText, slug, images) {
         if (!images.length) return { rewritten: mdText, mapping: [] };
 
@@ -126,11 +182,12 @@
         return { rewritten: rewritten, mapping: mapping };
     }
 
-    /* -- Submit -- */
+    // ── Submit flow ─────────────────────────────────────────────────────────
+
     submitBtn.addEventListener('click', function () {
         if (!chosenMd) return;
         submitBtn.disabled = true;
-        status.textContent = 'Reading article…';
+        setStatus('Reading article…', 'info');
 
         var reader = new FileReader();
         reader.onload = function (e) {
@@ -145,10 +202,10 @@
                 return;
             }
 
-            status.textContent = 'Uploading images (0/' + mapping.length + ')…';
+            setStatus('Uploading images (0/' + mapping.length + ')…', 'info');
             uploadImages(mapping, slug, 0, function (err) {
                 if (err) {
-                    status.textContent = '✗ Image upload failed: ' + err;
+                    setStatus('Image upload failed: ' + err, 'error');
                     submitBtn.disabled = false;
                     return;
                 }
@@ -161,7 +218,7 @@
     function uploadImages(mapping, slug, idx, done) {
         if (idx >= mapping.length) { done(null); return; }
         var item = mapping[idx];
-        status.textContent = 'Uploading images (' + (idx + 1) + '/' + mapping.length + ')…';
+        setStatus('Uploading images (' + (idx + 1) + '/' + mapping.length + ')…', 'info');
         var fr = new FileReader();
         fr.onload = function (ev) {
             var buf = ev.target.result;
@@ -184,7 +241,7 @@
     }
 
     function publishArticle(mdText) {
-        status.textContent = 'Publishing…';
+        setStatus('Publishing…', 'info');
         fetch('/admin/article', {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain' },
@@ -193,13 +250,13 @@
         })
             .then(function (r) {
                 if (r.ok) return r.text().then(function (slug) {
-                    status.textContent = '✓ Published! Redirecting…';
+                    setStatus('Published! Redirecting…', 'success');
                     setTimeout(function () { window.location = '/article/' + slug; }, 800);
                 });
                 return r.text().then(function (t) { throw new Error(t); });
             })
             .catch(function (e) {
-                status.textContent = '✗ ' + e.message;
+                setStatus(e.message, 'error');
                 submitBtn.disabled = false;
             });
     }
