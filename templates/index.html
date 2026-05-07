@@ -3,33 +3,34 @@
 
 {% include "partials/head.html" %}
 
-<body class="page--{{ content }}{% if is_mobile %} is-mobile{% endif %}"
-      data-server-mobile="{{ is_mobile }}">
+<body class="page--{{ content }}{% if is_mobile %} is-mobile{% endif %}" data-server-mobile="{{ is_mobile }}">
 
     {% include "partials/header.html" %}
 
     {% if content == "article" %}
-        {% include "partials/drawer.html" %}
+    {% include "partials/drawer.html" %}
     {% endif %}
 
-    <main class="layout{% if content != "article" %} layout--single{% endif %}">
+    <main class="layout{% if content != " article" %} layout--single{% endif %}">
         {% if content == "article" %}
-            {% include "partials/col-left.html" %}
-            {% include "partials/col-main.html" %}
-            {% include "partials/col-right.html" %}
+        {% include "partials/col-left.html" %}
+        {% include "partials/col-main.html" %}
+        {% include "partials/col-right.html" %}
         {% else if content == "empty" %}
-            {% include "partials/empty-card.html" %}
+        {% include "partials/empty-card.html" %}
         {% else if content == "admin" %}
-            {% include "partials/admin-list.html" %}
+        {% include "partials/admin-list.html" %}
         {% endif %}
     </main>
 
     {% include "partials/footer.html" %}
-    {% include "partials/scripts.html" %}
-
+    
     {% if is_admin %}
         {% include "partials/admin-panel.html" %}
     {% endif %}
+    
+    {% include "partials/scripts.html" %}
 
 </body>
+
 </html>

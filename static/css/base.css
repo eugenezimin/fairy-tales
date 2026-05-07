@@ -344,3 +344,56 @@ body {
 .article__rule { border: none; border-top: 2px solid var(--color-border); margin: 2rem 0; }
 .article__blockquote { border-left: 3px solid var(--color-accent); margin: 1rem 0; padding: 0.5rem 1rem; color: var(--color-muted); font-style: italic; }
 .article__blockquote p { margin-bottom: 0.5rem; }
+/* ---------- Empty state ---------- */
+
+.empty-layout {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+}
+
+.empty-card {
+    background: var(--color-article-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 3rem 2.5rem;
+    max-width: 480px;
+    width: 100%;
+    text-align: center;
+}
+
+.empty-card__icon {
+    color: var(--color-muted);
+    margin-bottom: 1.5rem;
+}
+
+.empty-card__title {
+    font-family: var(--font-heading, Georgia, serif);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 1rem;
+}
+
+.empty-card__body {
+    color: var(--color-muted);
+    margin-bottom: 0.75rem;
+    line-height: 1.65;
+}
+
+.empty-card__hint {
+    font-size: 0.88rem;
+    color: var(--color-muted);
+    margin-top: 1rem;
+}
+
+.empty-card__hint code {
+    background: var(--color-hover);
+    border: 1px solid var(--color-border);
+    border-radius: 3px;
+    padding: 0.1em 0.4em;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 0.85em;
+}
