@@ -64,6 +64,12 @@ impl ArticleRepository for FsArticleRepository {
     }
 
     fn save(&self, raw: &str) -> Result<String> {
+        anyhow::ensure!(!raw.trim().is_empty(), "article content is empty");
+
+        // Validate the content is a parseable markdown article before touching disk.
+        parser::parse_article(raw)
+            .context("invalid article: must be valid Markdown with at least one H1 heading")?;
+
         let slug = derive_slug(raw);
         validate_slug(&slug)?;
 

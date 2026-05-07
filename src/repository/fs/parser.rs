@@ -23,6 +23,17 @@ pub fn parse_article(raw: &str) -> Result<Article> {
 
     let (title, sections) = parse_body(body);
 
+    let raw = raw.trim();
+    anyhow::ensure!(!raw.is_empty(), "content is empty");
+
+    // Rough binary/non-UTF8 guard: if >30% of the first 256 bytes
+    // are non-ASCII-printable (excluding common whitespace), reject it.
+    let sample = raw.as_bytes().iter().take(256);
+    let non_print = sample
+        .filter(|&&b| b < 0x09 || (b > 0x0d && b < 0x20) || b == 0x7f)
+        .count();
+    anyhow::ensure!(non_print == 0, "content appears to be a binary file");
+
     if title.is_empty() {
         return Err(anyhow!("article has no H1 title"));
     }

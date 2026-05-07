@@ -50,9 +50,20 @@ async fn serve_page(
         Some(s) => s,
         None => match state.repo.random_slug() {
             Ok(s) => s,
-            Err(err) => {
-                tracing::error!(error = ?err, "failed to pick random article");
-                return (StatusCode::NOT_FOUND, "no articles found").into_response();
+            Err(_) => {
+                // No articles yet — show a friendly empty state.
+                match render::render_empty(
+                    &state.config.site,
+                    &state.config.theme,
+                    is_mobile,
+                    is_admin,
+                ) {
+                    Ok(html) => return Html(html).into_response(),
+                    Err(err) => {
+                        tracing::error!(error = ?err, "failed to render empty state");
+                        return (StatusCode::NOT_FOUND, "no articles found").into_response();
+                    }
+                }
             }
         },
     };
@@ -199,6 +210,71 @@ pub async fn list_articles_redirect_handler(
         return (StatusCode::UNAUTHORIZED, "unauthorized").into_response();
     }
     Redirect::to("/admin").into_response()
+}
+
+// ── Admin: image upload ───────────────────────────────────────────────────────
+
+pub async fn upload_image_handler(
+    State(state): State<AppState>,
+    jar: CookieJar,
+    headers: HeaderMap,
+    body: axum::body::Bytes,
+) -> impl IntoResponse {
+    if !is_admin_session(&state, &jar) {
+        return (StatusCode::UNAUTHORIZED, "unauthorized").into_response();
+    }
+
+    let orig_name = headers
+        .get("x-image-name")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("image.jpg")
+        .to_string();
+
+    let slug = headers
+        .get("x-article-slug")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("article")
+        .to_string();
+
+    let index: u32 = headers
+        .get("x-image-index")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(1);
+
+    let ext = std::path::Path::new(&orig_name)
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("jpg")
+        .to_ascii_lowercase();
+
+    if !matches!(
+        ext.as_str(),
+        "jpg" | "jpeg" | "png" | "gif" | "webp" | "svg" | "avif"
+    ) {
+        return (StatusCode::BAD_REQUEST, "unsupported image type").into_response();
+    }
+
+    let new_name = format!("{}-{}.{}", slug, index, ext);
+    let img_dir = state.config.server.static_dir.join("img");
+
+    if let Err(e) = std::fs::create_dir_all(&img_dir) {
+        tracing::error!(error = ?e, "failed to create static/img directory");
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "failed to create image directory",
+        )
+            .into_response();
+    }
+
+    let dest = img_dir.join(&new_name);
+    if let Err(e) = std::fs::write(&dest, &body) {
+        tracing::error!(error = ?e, path = %dest.display(), "failed to write image");
+        return (StatusCode::INTERNAL_SERVER_ERROR, "failed to save image").into_response();
+    }
+
+    tracing::info!(file = %new_name, "image uploaded");
+    (StatusCode::OK, new_name).into_response()
 }
 
 // ── Misc ──────────────────────────────────────────────────────────────────────

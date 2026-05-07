@@ -31,6 +31,18 @@ struct IndexView {
     is_admin: bool,
 }
 
+// ADD after the existing IndexView template struct and render_index fn:
+
+#[derive(Template)]
+#[template(path = "empty.html")]
+struct EmptyView {
+    site_title: String,
+    theme: String,
+    year: u16,
+    is_mobile: bool,
+    is_admin: bool,
+}
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 pub fn render_index(
@@ -57,4 +69,21 @@ pub fn render_index(
     }
     .render()
     .context("rendering index template")
+}
+
+pub fn render_empty(
+    site: &SiteConfig,
+    theme: &ThemeConfig,
+    is_mobile: bool,
+    is_admin: bool,
+) -> Result<String> {
+    EmptyView {
+        site_title: site.title.clone(),
+        theme: theme.name.clone(),
+        year: site.footer_year,
+        is_mobile,
+        is_admin,
+    }
+    .render()
+    .context("rendering empty template")
 }

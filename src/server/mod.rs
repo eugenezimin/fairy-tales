@@ -25,7 +25,7 @@ use crate::server::{
     auth::{activate_handler, logout_handler},
     handlers::{
         admin_list_handler, article_handler, delete_article_handler, health_handler, index_handler,
-        list_articles_redirect_handler, upload_article_handler,
+        list_articles_redirect_handler, upload_article_handler, upload_image_handler,
     },
     middleware::security_headers,
 };
@@ -53,6 +53,10 @@ pub fn build_router(state: AppState) -> Router {
         .route(
             "/admin/article",
             post(upload_article_handler).layer(DefaultBodyLimit::max(512 * 1024)),
+        )
+        .route(
+            "/admin/image",
+            post(upload_image_handler).layer(DefaultBodyLimit::max(10 * 1024 * 1024)),
         )
         .route("/admin/article/:slug", delete(delete_article_handler))
         // Static files with long-lived cache headers
