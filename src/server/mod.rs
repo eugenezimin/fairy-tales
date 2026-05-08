@@ -73,6 +73,18 @@ pub fn build_router(state: AppState) -> Router {
         );
     }
 
+    // Always serve uploaded images from the local filesystem,
+    // even when CSS/JS come from GitHub.
+    router = router.nest_service(
+        "/static/img",
+        tower::ServiceBuilder::new()
+            .layer(SetResponseHeaderLayer::if_not_present(
+                header::CACHE_CONTROL,
+                HeaderValue::from_static("public, max-age=86400"),
+            ))
+            .service(ServeDir::new("static/img")),
+    );
+
     router
         // Catch-all
         .fallback(|req: axum::http::Request<axum::body::Body>| async move {

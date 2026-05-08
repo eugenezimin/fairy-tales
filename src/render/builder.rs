@@ -152,21 +152,10 @@ pub fn inline_view(i: &Inline, static_base: &str) -> InlineView {
         },
         Inline::Image { src, alt, title } => InlineView {
             kind: "image".into(),
-            src: rewrite_img_src(src, static_base),
+            src: src.clone(),
             alt: alt.clone(),
             img_title: title.clone(),
             ..InlineView::empty()
         },
     }
-}
-
-fn rewrite_img_src(src: &str, static_base: &str) -> String {
-    if static_base.is_empty() {
-        return src.to_string();
-    }
-    // /static/img/foo.jpg  →  {cdn_base}/img/foo.jpg
-    if let Some(rest) = src.strip_prefix("/static/") {
-        return format!("{}/{}", static_base, rest);
-    }
-    src.to_string()
 }
