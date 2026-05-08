@@ -3,9 +3,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ page_title }} — {{ site_title }}</title>
 
+    {% if static_base == "" %}
     <link rel="stylesheet" href="/static/css/base.css">
     <link rel="stylesheet" href="/static/css/theme-{{ theme }}.css">
     <link rel="stylesheet" href="/static/css/mobile.css">
+    {% else %}
+    <link rel="stylesheet" href="{{ static_base }}/css/base.css">
+    <link rel="stylesheet" href="{{ static_base }}/css/theme-{{ theme }}.css">
+    <link rel="stylesheet" href="{{ static_base }}/css/mobile.css">
+    {% endif %}
 
     {% if content == "article" %}
     <style>
@@ -15,18 +21,21 @@
             max-width: 40%;
             border-radius: var(--radius);
         }
+
         .article__img--left {
             float: left;
             margin: 0 1.5rem 1rem 0;
             max-width: 40%;
             border-radius: var(--radius);
         }
+
         .article__img--center {
             display: block;
             margin: 1rem auto;
             max-width: 100%;
             border-radius: var(--radius);
         }
+
         .article__ad {
             background: var(--color-hover);
             border: 1px dashed var(--color-border);
@@ -37,6 +46,7 @@
             color: var(--color-muted);
             margin: 1.5rem 0;
         }
+
         .article__heading--h3 {
             font-family: var(--font-heading, Georgia, serif);
             font-size: 1.15rem;
@@ -44,6 +54,7 @@
             margin-bottom: 0.6rem;
             color: var(--color-text);
         }
+
         .article__heading--h4 {
             font-family: var(--font-body, system-ui);
             font-size: 1rem;
@@ -53,13 +64,29 @@
             text-transform: uppercase;
             letter-spacing: 0.04em;
         }
-        .toc__item--h3 { padding-left: 0.8rem; }
-        .toc__item--h4 { padding-left: 1.6rem; }
+
+        .toc__item--h3 {
+            padding-left: 0.8rem;
+        }
+
+        .toc__item--h4 {
+            padding-left: 1.6rem;
+        }
+
         .toc__item--h3 .toc__link,
-        .toc__item--h4 .toc__link { font-size: 0.82rem; }
+        .toc__item--h4 .toc__link {
+            font-size: 0.82rem;
+        }
+
         .toc__item--h3 .toc__link::before,
-        .toc__item--h4 .toc__link::before { content: ""; }
-        .story-list__item--active .story-list__title { color: var(--color-accent); }
+        .toc__item--h4 .toc__link::before {
+            content: "";
+        }
+
+        .story-list__item--active .story-list__title {
+            color: var(--color-accent);
+        }
+
         .story-list__item--active {
             border-left: 2px solid var(--color-accent);
             padding-left: calc(0.75rem - 2px);
@@ -69,7 +96,10 @@
 
     {% if content == "admin" %}
     <style>
-        .layout--single { grid-template-columns: 1fr; }
+        .layout--single {
+            grid-template-columns: 1fr;
+        }
+
         .layout--single .layout__main {
             grid-column: 1;
             grid-row: 1;
@@ -77,6 +107,7 @@
             width: 100%;
             margin: 0 auto;
         }
+
         .admin-heading {
             font-family: var(--font-heading, Georgia, serif);
             font-size: 1.4rem;
@@ -86,7 +117,13 @@
             padding-bottom: 0.75rem;
             border-bottom: 2px solid var(--color-accent);
         }
-        .article-list { list-style: none; padding: 0; margin: 0; }
+
+        .article-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
         .article-entry {
             display: flex;
             align-items: flex-start;
@@ -94,8 +131,16 @@
             padding: 1.25rem 0;
             border-bottom: 1px solid var(--color-border);
         }
-        .article-entry:last-child { border-bottom: none; }
-        .article-entry__body { flex: 1; min-width: 0; }
+
+        .article-entry:last-child {
+            border-bottom: none;
+        }
+
+        .article-entry__body {
+            flex: 1;
+            min-width: 0;
+        }
+
         .article-entry__title {
             font-family: var(--font-heading, Georgia, serif);
             font-size: 1.05rem;
@@ -103,19 +148,29 @@
             color: var(--color-text);
             margin-bottom: 0.3rem;
         }
-        .article-entry__title a { color: inherit; text-decoration: none; }
-        .article-entry__title a:hover { color: var(--color-accent); }
+
+        .article-entry__title a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .article-entry__title a:hover {
+            color: var(--color-accent);
+        }
+
         .article-entry__slug {
             font-size: 0.78rem;
             color: var(--color-muted);
             margin-bottom: 0.5rem;
             font-family: "JetBrains Mono", ui-monospace, monospace;
         }
+
         .article-entry__preview {
             font-size: 0.9rem;
             color: var(--color-muted);
             line-height: 1.55;
         }
+
         .delete-btn {
             flex-shrink: 0;
             background: none;
@@ -130,17 +185,24 @@
             align-self: flex-start;
             margin-top: 2px;
         }
+
         .delete-btn:hover {
             background: #fee2e2;
             border-color: #f87171;
             color: #b91c1c;
         }
-        .delete-btn:disabled { opacity: 0.4; cursor: default; }
+
+        .delete-btn:disabled {
+            opacity: 0.4;
+            cursor: default;
+        }
+
         .empty-state {
             text-align: center;
             padding: 4rem 0;
             color: var(--color-muted);
         }
+
         .toast {
             position: fixed;
             bottom: 1.5rem;
@@ -156,8 +218,15 @@
             pointer-events: none;
             z-index: 999;
         }
-        .toast.show { opacity: 1; transform: translateY(0); }
-        .toast.error { background: #b91c1c; }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .toast.error {
+            background: #b91c1c;
+        }
     </style>
     {% endif %}
 </head>

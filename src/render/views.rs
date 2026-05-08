@@ -49,6 +49,7 @@ pub struct PageView {
 
     // ── Admin list mode only (empty otherwise) ────────────────────────────────
     pub admin_articles: Vec<AdminArticleEntry>,
+    pub(crate) static_base: String,
 }
 
 impl PageView {
@@ -62,6 +63,7 @@ impl PageView {
         is_admin: bool,
         footer: crate::config::FooterConfig,
         content: PageContent,
+        static_base: String,
     ) -> Self {
         Self {
             site_title,
@@ -77,6 +79,7 @@ impl PageView {
             toc: Vec::new(),
             stories: Vec::new(),
             admin_articles: Vec::new(),
+            static_base,
         }
     }
 }

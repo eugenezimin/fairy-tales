@@ -35,11 +35,11 @@ impl Application {
 
         // Log where static assets come from so it's obvious at startup.
         match config.server.resolved_static_source() {
-            crate::config::StaticSource::Local { ref dir } => {
-                tracing::info!(dir = %dir.display(), "static assets: local directory");
+            crate::config::StaticSource::Local { source } => {
+                tracing::info!(dir = %source.display(), "static assets: local directory");
             }
-            crate::config::StaticSource::Github { ref repo_url } => {
-                tracing::info!(url = %repo_url, "static assets: GitHub repository");
+            crate::config::StaticSource::Github { source } => {
+                tracing::info!(url = %source, "static assets: GitHub repository");
             }
         }
 

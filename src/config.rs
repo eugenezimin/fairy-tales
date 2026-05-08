@@ -22,12 +22,7 @@ pub struct Config {
 pub struct ServerConfig {
     pub host: IpAddr,
     pub port: u16,
-    /// Used when `static_source` is absent — kept for backwards compat.
-    #[serde(default)]
-    pub static_dir: Option<PathBuf>,
-    /// Takes precedence over `static_dir` when present.
-    #[serde(default)]
-    pub static_source: Option<StaticSource>,
+    pub static_source: StaticSource,
     pub secure_cookies: bool,
 }
 
@@ -36,11 +31,11 @@ pub struct ServerConfig {
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum StaticSource {
     /// Serve files from a local directory (default).
-    Local { dir: PathBuf },
+    Local { source: PathBuf },
     /// Fetch assets from a GitHub repository tree URL, e.g.
     /// `"https://github.com/eugenezimin/fairy-tales/tree/main/static"`.
     /// The server rewrites this to the raw.githubusercontent.com CDN base.
-    Github { repo_url: String },
+    Github { source: String },
 }
 
 impl ServerConfig {
@@ -49,15 +44,8 @@ impl ServerConfig {
     }
 
     /// Resolve the effective static source.
-    pub fn resolved_static_source(&self) -> StaticSource {
-        if let Some(src) = &self.static_source {
-            return src.clone();
-        }
-        let dir = self
-            .static_dir
-            .clone()
-            .unwrap_or_else(|| PathBuf::from("static"));
-        StaticSource::Local { dir }
+    pub fn resolved_static_source(&self) -> &StaticSource {
+        &self.static_source
     }
 }
 
@@ -144,11 +132,11 @@ impl Config {
     }
 
     fn validate(&self) -> Result<()> {
-        if let StaticSource::Local { dir } = self.server.resolved_static_source() {
+        if let StaticSource::Local { source } = &self.server.static_source {
             anyhow::ensure!(
-                dir.is_dir(),
+                source.is_dir(),
                 "static dir does not exist or is not a directory: {}",
-                dir.display()
+                source.display()
             );
         }
         anyhow::ensure!(
@@ -169,7 +157,7 @@ impl StaticSource {
     /// must branch on the variant before asking for a local path.
     pub fn local_dir(&self) -> Option<&PathBuf> {
         match self {
-            StaticSource::Local { dir } => Some(dir),
+            StaticSource::Local { source } => Some(source),
             StaticSource::Github { .. } => None,
         }
     }
@@ -179,7 +167,7 @@ impl StaticSource {
     /// Returns `None` for `Local`.
     pub fn github_raw_base(&self) -> Option<String> {
         match self {
-            StaticSource::Github { repo_url } => Some(github_tree_to_raw(repo_url)),
+            StaticSource::Github { source } => Some(github_tree_to_raw(source)),
             StaticSource::Local { .. } => None,
         }
     }

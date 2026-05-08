@@ -35,6 +35,7 @@ struct PageTemplate {
     toc: Vec<crate::render::views::TocEntry>,
     sections: Vec<crate::render::views::SectionView>,
     admin_articles: Vec<AdminArticleEntry>,
+    static_base: String,
 }
 
 impl PageTemplate {
@@ -53,6 +54,7 @@ impl PageTemplate {
             toc: view.toc,
             sections: view.sections,
             admin_articles: view.admin_articles,
+            static_base: view.static_base,
         }
     }
 }
@@ -85,12 +87,14 @@ pub fn article_view(
         is_admin,
         site.footer.clone(),
         PageContent::Article,
+        site.server.static_base.clone(),
     );
     view.article_slug = bundle.article.slug.clone();
     view.toc = build_toc(&bundle.article);
     view.sections = build_section_views(&bundle.article);
     view.stories = bundle.stories.clone();
     view.footer = site.footer.clone();
+    view.static_base = site.static_base.clone();
     view
 }
 

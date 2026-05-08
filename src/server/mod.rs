@@ -61,7 +61,7 @@ pub fn build_router(state: AppState) -> Router {
         .route("/admin/article/:slug", delete(delete_article_handler));
 
     // Static files — only wired for local sources.
-    if let StaticSource::Local { dir } = state.config.server.resolved_static_source() {
+    if let StaticSource::Local { source } = state.config.server.resolved_static_source() {
         router = router.nest_service(
             "/static",
             tower::ServiceBuilder::new()
@@ -69,7 +69,7 @@ pub fn build_router(state: AppState) -> Router {
                     header::CACHE_CONTROL,
                     HeaderValue::from_static("public, max-age=31536000, immutable"),
                 ))
-                .service(ServeDir::new(dir)),
+                .service(ServeDir::new(source)),
         );
     }
 

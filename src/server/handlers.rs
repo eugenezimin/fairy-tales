@@ -237,13 +237,7 @@ pub async fn upload_image_handler(
     }
 
     let new_name = format!("{}-{}.{}", slug, index, ext);
-    let img_dir = state
-        .config
-        .server
-        .static_dir
-        .as_deref()
-        .unwrap_or_else(|| std::path::Path::new("static"))
-        .join("img");
+    let img_dir = std::path::Path::new("static").join("img");
 
     if let Err(e) = std::fs::create_dir_all(&img_dir) {
         tracing::error!(error = ?e, "failed to create static/img directory");
