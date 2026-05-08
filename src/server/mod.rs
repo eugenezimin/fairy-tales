@@ -35,11 +35,11 @@ use axum::extract::DefaultBodyLimit;
 // ── Router ────────────────────────────────────────────────────────────────────
 
 pub fn build_router(state: AppState) -> Router {
-    let static_dir = state.config.server.static_dir.clone();
+    use crate::config::StaticSource;
 
     tracing::info!("registering routes");
 
-    Router::new()
+    let mut router = Router::new()
         // Public
         .route("/", get(index_handler))
         .route("/article/:slug", get(article_handler))
@@ -58,18 +58,23 @@ pub fn build_router(state: AppState) -> Router {
             "/admin/image",
             post(upload_image_handler).layer(DefaultBodyLimit::max(10 * 1024 * 1024)),
         )
-        .route("/admin/article/:slug", delete(delete_article_handler))
-        // Static files with long-lived cache headers
-        .nest_service(
+        .route("/admin/article/:slug", delete(delete_article_handler));
+
+    // Static files — only wired for local sources.
+    if let StaticSource::Local { dir } = state.config.server.resolved_static_source() {
+        router = router.nest_service(
             "/static",
             tower::ServiceBuilder::new()
                 .layer(SetResponseHeaderLayer::if_not_present(
                     header::CACHE_CONTROL,
                     HeaderValue::from_static("public, max-age=31536000, immutable"),
                 ))
-                .service(ServeDir::new(static_dir)),
-        )
-        // Catch-all: log exactly what path missed all routes
+                .service(ServeDir::new(dir)),
+        );
+    }
+
+    router
+        // Catch-all
         .fallback(|req: axum::http::Request<axum::body::Body>| async move {
             tracing::warn!(
                 method = %req.method(),
@@ -81,7 +86,6 @@ pub fn build_router(state: AppState) -> Router {
                 format!("404 — no route for {} {}", req.method(), req.uri().path()),
             )
         })
-        // Tracing (redacts auth tokens from logs)
         .layer(
             TraceLayer::new_for_http().make_span_with(|request: &axum::http::Request<_>| {
                 let path = request.uri().path();

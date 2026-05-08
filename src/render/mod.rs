@@ -28,6 +28,7 @@ struct PageTemplate {
     year: u16,
     is_mobile: bool,
     is_admin: bool,
+    footer: crate::config::FooterConfig,
     /// `"article"` | `"empty"` | `"admin"`
     content: String,
     stories: Vec<StoryHeader>,
@@ -46,6 +47,7 @@ impl PageTemplate {
             year: view.year,
             is_mobile: view.is_mobile,
             is_admin: view.is_admin,
+            footer: view.footer,
             content: view.content,
             stories: view.stories,
             toc: view.toc,
@@ -81,12 +83,14 @@ pub fn article_view(
         site.footer_year,
         is_mobile,
         is_admin,
+        site.footer.clone(),
         PageContent::Article,
     );
     view.article_slug = bundle.article.slug.clone();
     view.toc = build_toc(&bundle.article);
     view.sections = build_section_views(&bundle.article);
     view.stories = bundle.stories.clone();
+    view.footer = site.footer.clone();
     view
 }
 
@@ -104,6 +108,7 @@ pub fn empty_view(
         site.footer_year,
         is_mobile,
         is_admin,
+        site.footer.clone(),
         PageContent::Empty,
     )
 }
@@ -122,8 +127,10 @@ pub fn admin_view(
         site.footer_year,
         is_mobile,
         true,
+        site.footer.clone(),
         PageContent::Admin,
     );
     view.admin_articles = articles;
+    view.footer = site.footer.clone();
     view
 }

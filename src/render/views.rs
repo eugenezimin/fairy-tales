@@ -37,6 +37,7 @@ pub struct PageView {
     pub year: u16,
     pub is_mobile: bool,
     pub is_admin: bool,
+    pub footer: crate::config::FooterConfig,
     /// Drives `{% if content == "..." %}` branches in the template.
     pub content: String,
 
@@ -59,6 +60,7 @@ impl PageView {
         year: u16,
         is_mobile: bool,
         is_admin: bool,
+        footer: crate::config::FooterConfig,
         content: PageContent,
     ) -> Self {
         Self {
@@ -68,6 +70,7 @@ impl PageView {
             year,
             is_mobile,
             is_admin,
+            footer,
             content: content.as_str().to_string(),
             article_slug: String::new(),
             sections: Vec::new(),

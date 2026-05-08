@@ -33,6 +33,16 @@ impl Application {
         let repo = Arc::new(repo);
         // ───────────────────────────────────────────────────────────────────
 
+        // Log where static assets come from so it's obvious at startup.
+        match config.server.resolved_static_source() {
+            crate::config::StaticSource::Local { ref dir } => {
+                tracing::info!(dir = %dir.display(), "static assets: local directory");
+            }
+            crate::config::StaticSource::Github { ref repo_url } => {
+                tracing::info!(url = %repo_url, "static assets: GitHub repository");
+            }
+        }
+
         let state = AppState {
             config: Arc::new(config),
             repo,
