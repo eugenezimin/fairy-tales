@@ -23,11 +23,15 @@ pub fn build_toc(article: &Article) -> Vec<TocEntry> {
 
 // ── Sections ──────────────────────────────────────────────────────────────────
 
-pub fn build_section_views(article: &Article) -> Vec<SectionView> {
-    article.sections.iter().map(section_view).collect()
+pub fn build_section_views(article: &Article, static_base: &str) -> Vec<SectionView> {
+    article
+        .sections
+        .iter()
+        .map(|s| section_view(s, static_base))
+        .collect()
 }
 
-fn section_view(s: &Section) -> SectionView {
+fn section_view(s: &Section, static_base: &str) -> SectionView {
     SectionView {
         has_heading: s.heading.is_some(),
         heading_level: s
@@ -41,17 +45,24 @@ fn section_view(s: &Section) -> SectionView {
             .as_ref()
             .map(|h| h.text.clone())
             .unwrap_or_default(),
-        blocks: s.blocks.iter().map(block_view).collect(),
+        blocks: s
+            .blocks
+            .iter()
+            .map(|b| block_view(b, static_base))
+            .collect(),
     }
 }
 
 // ── Blocks ────────────────────────────────────────────────────────────────────
 
-pub fn block_view(b: &Block) -> BlockView {
+pub fn block_view(b: &Block, static_base: &str) -> BlockView {
     match b {
         Block::Paragraph(inlines) => BlockView {
             kind: "paragraph".into(),
-            inlines: inlines.iter().map(inline_view).collect(),
+            inlines: inlines
+                .iter()
+                .map(|i| inline_view(i, static_base))
+                .collect(),
             ..BlockView::empty()
         },
         Block::Ad(slot) => BlockView {
@@ -65,7 +76,11 @@ pub fn block_view(b: &Block) -> BlockView {
             items: items
                 .iter()
                 .map(|item| ListItemView {
-                    blocks: item.blocks.iter().map(block_view).collect(),
+                    blocks: item
+                        .blocks
+                        .iter()
+                        .map(|b| block_view(b, static_base))
+                        .collect(),
                 })
                 .collect(),
             ..BlockView::empty()
@@ -74,13 +89,13 @@ pub fn block_view(b: &Block) -> BlockView {
             kind: "table".into(),
             headers: headers
                 .iter()
-                .map(|cell| cell.iter().map(inline_view).collect())
+                .map(|cell| cell.iter().map(|i| inline_view(i, static_base)).collect())
                 .collect(),
             rows: rows
                 .iter()
                 .map(|row| {
                     row.iter()
-                        .map(|cell| cell.iter().map(inline_view).collect())
+                        .map(|cell| cell.iter().map(|i| inline_view(i, static_base)).collect())
                         .collect()
                 })
                 .collect(),
@@ -88,7 +103,7 @@ pub fn block_view(b: &Block) -> BlockView {
         },
         Block::BlockQuote(blocks) => BlockView {
             kind: "blockquote".into(),
-            children: blocks.iter().map(block_view).collect(),
+            children: blocks.iter().map(|b| block_view(b, static_base)).collect(),
             ..BlockView::empty()
         },
         Block::Rule => BlockView {
@@ -106,16 +121,21 @@ pub fn block_view(b: &Block) -> BlockView {
 
 // ── Inlines ───────────────────────────────────────────────────────────────────
 
-pub fn inline_view(i: &Inline) -> InlineView {
+pub fn inline_view(i: &Inline, static_base: &str) -> InlineView {
     match i {
         Inline::Text(t) => InlineView::leaf("text", t),
         Inline::Code(t) => InlineView::leaf("code", t),
         Inline::SoftBreak => InlineView::leaf("softbreak", ""),
         Inline::HardBreak => InlineView::leaf("hardbreak", ""),
-        Inline::Strong(ch) => {
-            InlineView::with_children("strong", ch.iter().map(inline_view).collect())
-        }
-        Inline::Em(ch) => InlineView::with_children("em", ch.iter().map(inline_view).collect()),
+        Inline::Strong(ch) => InlineView::with_children(
+            "strong",
+            ch.iter().map(|i| inline_view(i, static_base)).collect(),
+        ),
+
+        Inline::Em(ch) => InlineView::with_children(
+            "em",
+            ch.iter().map(|i| inline_view(i, static_base)).collect(),
+        ),
         Inline::Link {
             href,
             title,
@@ -124,15 +144,29 @@ pub fn inline_view(i: &Inline) -> InlineView {
             kind: "link".into(),
             href: href.clone(),
             link_title: title.clone(),
-            children: children.iter().map(inline_view).collect(),
+            children: children
+                .iter()
+                .map(|i| inline_view(i, static_base))
+                .collect(),
             ..InlineView::empty()
         },
         Inline::Image { src, alt, title } => InlineView {
             kind: "image".into(),
-            src: src.clone(),
+            src: rewrite_img_src(src, static_base),
             alt: alt.clone(),
             img_title: title.clone(),
             ..InlineView::empty()
         },
     }
+}
+
+fn rewrite_img_src(src: &str, static_base: &str) -> String {
+    if static_base.is_empty() {
+        return src.to_string();
+    }
+    // /static/img/foo.jpg  →  {cdn_base}/img/foo.jpg
+    if let Some(rest) = src.strip_prefix("/static/") {
+        return format!("{}/{}", static_base, rest);
+    }
+    src.to_string()
 }

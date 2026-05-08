@@ -92,7 +92,7 @@ pub fn article_view(
     );
     view.article_slug = bundle.article.slug.clone();
     view.toc = build_toc(&bundle.article);
-    view.sections = build_section_views(&bundle.article);
+    view.sections = build_section_views(&bundle.article, static_base);
     view.stories = bundle.stories.clone();
     view
 }

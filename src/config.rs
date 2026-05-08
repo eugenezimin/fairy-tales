@@ -177,6 +177,23 @@ impl StaticSource {
 /// `https://github.com/eugenezimin/fairy-tales/tree/main/static`
 /// → `https://raw.githubusercontent.com/eugenezimin/fairy-tales/main/static`
 fn github_tree_to_raw(tree_url: &str) -> String {
+    // raw.githubusercontent.com serves with Content-Type: text/plain, which
+    // browsers reject for CSS/JS. jsDelivr mirrors GitHub and serves correct
+    // MIME types.
+    //
+    // https://github.com/USER/REPO/tree/BRANCH/PATH
+    // → https://cdn.jsdelivr.net/gh/USER/REPO@BRANCH/PATH
+    let without_gh = tree_url.trim_start_matches("https://github.com/");
+
+    // Split on "/tree/" to separate "user/repo" from "branch/path"
+    if let Some((repo_part, rest)) = without_gh.split_once("/tree/") {
+        // rest = "main/static" — split branch from subpath
+        if let Some((branch, path)) = rest.split_once('/') {
+            return format!("https://cdn.jsdelivr.net/gh/{repo_part}@{branch}/{path}");
+        }
+    }
+
+    // Fallback: just strip the tree segment (may still have MIME issues)
     tree_url
         .replace("https://github.com/", "https://raw.githubusercontent.com/")
         .replace("/tree/", "/")

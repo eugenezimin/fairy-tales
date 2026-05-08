@@ -8,8 +8,8 @@ port = 3000
 secure_cookies = false
 
 [server.static_source]
-kind = "local" # "local" or "github"
-source = "static" #"https://github.com/eugenezimin/fairy-tales/tree/main/static" # URL to the directory containing static files or GitHub repo URL
+kind = "github" # "local" or "github"
+source = "https://github.com/eugenezimin/fairy-tales/tree/main/static" # URL to the directory containing static files or GitHub repo URL
 
 
 [site]

@@ -14,7 +14,7 @@ pub async fn security_headers(request: Request, next: axum::middleware::Next) ->
     );
     headers.insert(
     "Content-Security-Policy",
-    "default-src 'self'; style-src 'self' 'unsafe-inline' https://raw.githubusercontent.com; script-src 'self' 'unsafe-inline' https://raw.githubusercontent.com; img-src 'self' data: https:"
+    "default-src 'self'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: https:"
         .parse()
         .unwrap(),
 );
