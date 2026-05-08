@@ -54,6 +54,7 @@ async fn serve_page(
                     &state.config.theme,
                     is_mobile,
                     is_admin,
+                    &resolve_static_base(&state),
                 );
                 return match render::render_page(view) {
                     Ok(html) => Html(html).into_response(),
@@ -89,6 +90,7 @@ async fn serve_page(
         &bundle,
         is_mobile,
         is_admin,
+        &resolve_static_base(&state),
     );
 
     match render::render_page(view) {
@@ -130,7 +132,13 @@ pub async fn admin_list_handler(
         })
         .collect();
 
-    let view = render::admin_view(&state.config.site, &state.config.theme, is_mobile, articles);
+    let view = render::admin_view(
+        &state.config.site,
+        &state.config.theme,
+        is_mobile,
+        articles,
+        &resolve_static_base(&state),
+    );
 
     match render::render_page(view) {
         Ok(html) => Html(html).into_response(),
@@ -262,4 +270,13 @@ pub async fn upload_image_handler(
 
 pub async fn health_handler() -> &'static str {
     "ok"
+}
+
+fn resolve_static_base(state: &AppState) -> String {
+    state
+        .config
+        .server
+        .static_source
+        .github_raw_base()
+        .unwrap_or_default()
 }

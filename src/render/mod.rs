@@ -77,6 +77,7 @@ pub fn article_view(
     bundle: &ContentBundle,
     is_mobile: bool,
     is_admin: bool,
+    static_base: &str,
 ) -> PageView {
     let mut view = PageView::base(
         site.title.clone(),
@@ -87,14 +88,12 @@ pub fn article_view(
         is_admin,
         site.footer.clone(),
         PageContent::Article,
-        site.server.static_base.clone(),
+        static_base.to_string(),
     );
     view.article_slug = bundle.article.slug.clone();
     view.toc = build_toc(&bundle.article);
     view.sections = build_section_views(&bundle.article);
     view.stories = bundle.stories.clone();
-    view.footer = site.footer.clone();
-    view.static_base = site.static_base.clone();
     view
 }
 
@@ -104,6 +103,7 @@ pub fn empty_view(
     theme: &ThemeConfig,
     is_mobile: bool,
     is_admin: bool,
+    static_base: &str,
 ) -> PageView {
     PageView::base(
         site.title.clone(),
@@ -114,6 +114,7 @@ pub fn empty_view(
         is_admin,
         site.footer.clone(),
         PageContent::Empty,
+        static_base.to_string(),
     )
 }
 
@@ -123,6 +124,7 @@ pub fn admin_view(
     theme: &ThemeConfig,
     is_mobile: bool,
     articles: Vec<AdminArticleEntry>,
+    static_base: &str,
 ) -> PageView {
     let mut view = PageView::base(
         site.title.clone(),
@@ -133,8 +135,8 @@ pub fn admin_view(
         true,
         site.footer.clone(),
         PageContent::Admin,
+        static_base.to_string(),
     );
     view.admin_articles = articles;
-    view.footer = site.footer.clone();
     view
 }

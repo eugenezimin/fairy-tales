@@ -54,7 +54,6 @@ pub struct SiteConfig {
     pub title: String,
     pub page_title: String,
     pub footer_year: u16,
-    /// Optional footer overrides. If absent, the template uses its built-in defaults.
     #[serde(default)]
     pub footer: FooterConfig,
 }
