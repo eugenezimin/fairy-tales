@@ -8,10 +8,24 @@ port = 3000
 static_dir = "static"
 secure_cookies = false
 
+[server.static_source]
+kind = "github" # "local" or "github"
+source = "https://github.com/eugenezimin/fairy-tales/tree/main/static" # URL to the directory containing static files or GitHub repo URL
+
+
 [site]
 title = "Rusty Pages"
 page_title = "A server-rendered page in Rust"
 footer_year = 2026
+
+# Optional footer overrides:
+[site.footer]
+text = "Custom HTML footer"          # overrides everything
+copyright = "© 2026 Acme Corp"              # overrides just the © line
+links = [
+  { label = "Privacy", href = "/privacy" },
+  { label = "Terms",   href = "/terms"   },
+]
 
 [content]
 # Every .toml file in this directory is treated as a separate article.
