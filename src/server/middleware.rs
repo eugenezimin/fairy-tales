@@ -13,10 +13,10 @@ pub async fn security_headers(request: Request, next: axum::middleware::Next) ->
         "strict-origin-when-cross-origin".parse().unwrap(),
     );
     headers.insert(
-        "Content-Security-Policy",
-        "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data: https:"
-            .parse()
-            .unwrap(),
-    );
+    "Content-Security-Policy",
+    "default-src 'self'; style-src 'self' 'unsafe-inline' https://raw.githubusercontent.com; script-src 'self' 'unsafe-inline' https://raw.githubusercontent.com; img-src 'self' data: https:"
+        .parse()
+        .unwrap(),
+);
     response
 }
