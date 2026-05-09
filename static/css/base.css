@@ -377,14 +377,15 @@ body {
   padding: 1rem 1.25rem;
   overflow-x: auto;
   margin: 1rem 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 .article__pre code {
   font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
   font-size: 0.85rem;
   color: var(--color-text);
   background: none;
-  white-space: pre-wrap;
-  word-break: break-word;
 }
 .article__rule {
   border: none;
