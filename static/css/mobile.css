@@ -94,20 +94,17 @@
 
 .mobile-stories-drawer {
   display: none;
-  position: absolute;
-  top: 7%;
-  right: 15px;
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
   z-index: 1050;
   background: var(--color-header-bg);
-  border-bottom: 2px solid var(--color-accent);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
-  max-height: 0;
+  border-left: 2px solid var(--color-accent);
   overflow: hidden;
-  opacity: 0;
-  max-width: 480px;
-  transition:
-    max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.25s ease;
+  transform: translateX(100%);
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .is-mobile .mobile-stories-drawer {
@@ -115,8 +112,7 @@
 }
 
 .mobile-stories-drawer.is-open {
-  max-height: 82vh;
-  opacity: 1;
+  transform: translateX(0);
   overflow-y: auto;
 }
 
@@ -266,25 +262,8 @@
   font-size: 0.82rem;
 }
 
-/* ---------- Backdrop ---------- */
-
 .mobile-drawer-backdrop {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 1040;
-  background: rgba(0, 0, 0, 0.38);
-  opacity: 0;
-  transition: opacity 0.25s ease;
-  cursor: pointer;
-}
-
-.is-mobile .mobile-drawer-backdrop {
-  display: block;
-}
-
-.mobile-drawer-backdrop.is-open {
-  opacity: 1;
+  display: none; /* backdrop disabled — no overlay */
 }
 
 /* ---------- Article typography ---------- */
