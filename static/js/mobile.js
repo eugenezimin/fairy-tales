@@ -1,7 +1,7 @@
 (function () {
     'use strict';
 
-    var MOBILE_BREAKPOINT = 1100;
+    var MOBILE_BREAKPOINT = 768;
     var body = document.body;
     var hamburgerBtn = document.getElementById('hamburger-btn');
     var drawer = document.getElementById('mobile-stories-drawer');

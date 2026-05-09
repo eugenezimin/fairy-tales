@@ -13,18 +13,18 @@ source = "static" #"https://github.com/eugenezimin/fairy-tales/tree/main/static"
 
 
 [site]
-title = "Rusty Pages"
-page_title = "A server-rendered page in Rust"
+title = "Между строк"
+page_title = "Невыдуманне истории настоящей жизни"
 footer_year = 2026
 
 # Optional footer overrides:
 [site.footer]
-text = "Custom HTML footer"          # overrides everything
-copyright = "© 2026 Acme Corp"              # overrides just the © line
-links = [
-  { label = "Privacy", href = "/privacy" },
-  { label = "Terms",   href = "/terms"   },
-]
+# text = "Custom HTML footer"          # overrides everything
+copyright = "© 2026 by RealStories"              # overrides just the © line
+# links = [
+#   { label = "Privacy", href = "/privacy" },
+#   { label = "Terms",   href = "/terms"   },
+# ]
 
 [content]
 # Every .toml file in this directory is treated as a separate article.
