@@ -8,9 +8,21 @@
 /// assert_eq!(slugify("Hello, World!"), "hello-world");
 /// ```
 pub fn slugify(text: &str) -> String {
-    text.to_lowercase()
+    let transliterated: String = text
         .chars()
-        .map(|c| if c.is_alphanumeric() { c } else { '-' })
+        .map(|c| {
+            if c.is_ascii() {
+                c.to_string()
+            } else {
+                transliterate_char(c).to_string()
+            }
+        })
+        .collect();
+
+    transliterated
+        .to_lowercase()
+        .chars()
+        .map(|c| if c.is_ascii_alphanumeric() { c } else { '-' })
         .collect::<String>()
         .split('-')
         .filter(|s| !s.is_empty())
@@ -54,6 +66,47 @@ pub fn shuffle<T>(slice: &mut [T]) {
         state ^= state >> 7;
         state ^= state << 17;
         slice.swap(i, (state as usize) % (i + 1));
+    }
+}
+// ── Transliteration ───────────────────────────────────────────────────────────
+
+/// Transliterate a single Cyrillic character to its ASCII Latin equivalent.
+fn transliterate_char(c: char) -> &'static str {
+    match c {
+        'а' | 'А' => "a",
+        'б' | 'Б' => "b",
+        'в' | 'В' => "v",
+        'г' | 'Г' => "g",
+        'д' | 'Д' => "d",
+        'е' | 'Е' => "e",
+        'ё' | 'Ё' => "yo",
+        'ж' | 'Ж' => "zh",
+        'з' | 'З' => "z",
+        'и' | 'И' => "i",
+        'й' | 'Й' => "y",
+        'к' | 'К' => "k",
+        'л' | 'Л' => "l",
+        'м' | 'М' => "m",
+        'н' | 'Н' => "n",
+        'о' | 'О' => "o",
+        'п' | 'П' => "p",
+        'р' | 'Р' => "r",
+        'с' | 'С' => "s",
+        'т' | 'Т' => "t",
+        'у' | 'У' => "u",
+        'ф' | 'Ф' => "f",
+        'х' | 'Х' => "kh",
+        'ц' | 'Ц' => "ts",
+        'ч' | 'Ч' => "ch",
+        'ш' | 'Ш' => "sh",
+        'щ' | 'Щ' => "sch",
+        'ъ' | 'Ъ' => "",
+        'ы' | 'Ы' => "y",
+        'ь' | 'Ь' => "",
+        'э' | 'Э' => "e",
+        'ю' | 'Ю' => "yu",
+        'я' | 'Я' => "ya",
+        _ => "-",
     }
 }
 
