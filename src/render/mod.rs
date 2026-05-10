@@ -1,77 +1,24 @@
 //! HTML rendering.
 //!
-//! Translates the domain model into a single `PageView` and renders the
-//! one shared `index.html` frame. The frame includes different partials
-//! depending on `PageView::content`.
+//! `renderer`    — the `Renderer` trait (interface).
+//! `askama_impl` — the Askama-backed implementation.
+//! `views`       — view-model structs consumed by templates.
+//! `builder`     — domain-model → view-model conversion (pure functions).
 
+pub mod askama_impl;
 pub mod builder;
+pub mod renderer;
 pub mod views;
 
-use std::collections::HashMap;
-use std::string;
+pub use askama_impl::AskamaRenderer;
+pub use renderer::Renderer;
 
-use anyhow::{Context, Result};
-use askama::Template;
+use std::collections::HashMap;
 
 use crate::config::{SiteConfig, ThemeConfig};
-use crate::domain::{ContentBundle, StoryHeader};
+use crate::domain::ContentBundle;
 use crate::render::builder::{build_section_views, build_toc};
 use crate::render::views::{AdminArticleEntry, PageContent, PageView};
-
-// ── Template ──────────────────────────────────────────────────────────────────
-
-#[derive(Template)]
-#[template(path = "index.html")]
-struct PageTemplate {
-    // Flatten PageView fields — Askama needs direct field access.
-    site_title: String,
-    page_title: String,
-    article_slug: String,
-    theme: String,
-    year: u16,
-    is_mobile: bool,
-    is_admin: bool,
-    footer: crate::config::FooterConfig,
-    /// `"article"` | `"empty"` | `"admin"`
-    content: String,
-    stories: Vec<StoryHeader>,
-    toc: Vec<crate::render::views::TocEntry>,
-    sections: Vec<crate::render::views::SectionView>,
-    admin_articles: Vec<AdminArticleEntry>,
-    static_base: String,
-    strings: HashMap<String, String>,
-}
-
-impl PageTemplate {
-    fn from_view(view: PageView) -> Self {
-        Self {
-            site_title: view.site_title,
-            page_title: view.page_title,
-            article_slug: view.article_slug,
-            theme: view.theme,
-            year: view.year,
-            is_mobile: view.is_mobile,
-            is_admin: view.is_admin,
-            footer: view.footer,
-            content: view.content,
-            stories: view.stories,
-            toc: view.toc,
-            sections: view.sections,
-            admin_articles: view.admin_articles,
-            static_base: view.static_base,
-            strings: view.strings,
-        }
-    }
-}
-
-// ── Public API ────────────────────────────────────────────────────────────────
-
-/// Render any page mode through the single shared frame.
-pub fn render_page(view: PageView) -> Result<String> {
-    PageTemplate::from_view(view)
-        .render()
-        .context("rendering page template")
-}
 
 // ── View constructors ─────────────────────────────────────────────────────────
 

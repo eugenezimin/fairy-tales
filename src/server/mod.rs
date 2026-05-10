@@ -8,6 +8,8 @@ pub mod auth;
 pub mod handlers;
 pub mod middleware;
 pub mod mobile;
+pub mod session;
+pub mod session_memory;
 pub mod state;
 
 pub use state::AppState;

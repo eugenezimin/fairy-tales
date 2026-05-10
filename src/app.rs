@@ -1,16 +1,12 @@
 //! Application bootstrap.
-//!
-//! The only job of this module is to load config, build the concrete
-//! repository, assemble `AppState`, and hand off to the server.
-//!
-//! To swap in a different storage backend, change the two lines inside
-//! `bootstrap` that construct `repo` — nothing else needs to change.
 
 use anyhow::Result;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use crate::config::Config;
+use crate::render::AskamaRenderer;
 use crate::repository::fs::FsArticleRepository;
+use crate::server::session_memory::InMemorySessionStore;
 use crate::server::{self, AppState};
 
 pub struct Application {
@@ -33,7 +29,6 @@ impl Application {
         let repo = Arc::new(repo);
         // ───────────────────────────────────────────────────────────────────
 
-        // Log where static assets come from so it's obvious at startup.
         match config.server.resolved_static_source() {
             crate::config::StaticSource::Local { source } => {
                 tracing::info!(dir = %source.display(), "static assets: local directory");
@@ -46,8 +41,10 @@ impl Application {
         let state = AppState {
             config: Arc::new(config),
             repo,
-            admin_session: Arc::new(Mutex::new(None)),
-            last_auth_attempt: Arc::new(Mutex::new(None)),
+            renderer: Arc::new(AskamaRenderer),
+            // ── Swap this line to use a different session backend ───────────
+            sessions: Arc::new(InMemorySessionStore::new()),
+            // ─────────────────────────────────────────────────────────────────
         };
 
         Ok(Self { state })

@@ -91,12 +91,12 @@
         trigger.addEventListener('click', function (e) {
             e.preventDefault();
             resetPanel();
-            panel.style.display = 'flex';
+            panel.classList.add('is-open');
         });
     }
 
-    closeBtn.addEventListener('click', function () { panel.style.display = 'none'; });
-    panel.addEventListener('click', function (e) { if (e.target === panel) panel.style.display = 'none'; });
+    closeBtn.addEventListener('click', function () { panel.classList.remove('is-open'); });
+    panel.addEventListener('click', function (e) { if (e.target === panel) panel.classList.remove('is-open'); });
 
     // ── File intake ─────────────────────────────────────────────────────────
 

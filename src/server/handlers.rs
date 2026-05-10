@@ -57,7 +57,7 @@ async fn serve_page(
                     &resolve_static_base(&state),
                     state.config.strings.clone(),
                 );
-                return match render::render_page(view) {
+                return match state.renderer.render(view) {
                     Ok(html) => Html(html).into_response(),
                     Err(err) => {
                         tracing::error!(error = ?err, "failed to render empty state");
@@ -95,7 +95,7 @@ async fn serve_page(
         state.config.strings.clone(),
     );
 
-    match render::render_page(view) {
+    match state.renderer.render(view) {
         Ok(html) => Html(html).into_response(),
         Err(err) => {
             tracing::error!(error = ?err, "failed to render page");
@@ -143,7 +143,7 @@ pub async fn admin_list_handler(
         state.config.strings.clone(),
     );
 
-    match render::render_page(view) {
+    match state.renderer.render(view) {
         Ok(html) => Html(html).into_response(),
         Err(err) => {
             tracing::error!(error = ?err, "admin list render failed");

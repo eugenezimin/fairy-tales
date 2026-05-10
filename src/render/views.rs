@@ -1,8 +1,11 @@
 //! View models consumed by Askama templates.
 //!
-//! All three page modes (article, empty, admin) share a single `PageView`
-//! struct. Fields unused in a given mode are left empty — the template only
-//! renders what the active content partial touches.
+//! Pure data — structs and enums only. No constructors, no logic.
+//! Construction helpers live in `builder.rs`.
+
+use std::collections::HashMap;
+
+pub use crate::domain::StoryHeader;
 
 // ── Page mode ─────────────────────────────────────────────────────────────────
 
@@ -53,44 +56,9 @@ pub struct PageView {
     pub strings: HashMap<String, String>,
 }
 
-impl PageView {
-    /// Convenience: build the shared fields that every mode needs.
-    pub fn base(
-        site_title: String,
-        page_title: String,
-        theme: String,
-        year: u16,
-        is_mobile: bool,
-        is_admin: bool,
-        footer: crate::config::FooterConfig,
-        content: PageContent,
-        static_base: String,
-        strings: HashMap<String, String>,
-    ) -> Self {
-        Self {
-            site_title,
-            page_title,
-            theme,
-            year,
-            is_mobile,
-            is_admin,
-            footer,
-            content: content.as_str().to_string(),
-            article_slug: String::new(),
-            sections: Vec::new(),
-            toc: Vec::new(),
-            stories: Vec::new(),
-            admin_articles: Vec::new(),
-            static_base,
-            strings,
-        }
-    }
-}
-
 // ── Admin article entry ───────────────────────────────────────────────────────
 
 /// Lightweight row shown in the admin article list.
-/// Moved here from the inline struct in `handlers.rs`.
 #[derive(Clone)]
 pub struct AdminArticleEntry {
     pub slug: String,
@@ -118,48 +86,13 @@ pub struct TocEntry {
 #[derive(Clone)]
 pub struct InlineView {
     pub kind: String,
-    // text / code
     pub text: String,
-    // strong / em / link children
     pub children: Vec<InlineView>,
-    // link
     pub href: String,
     pub link_title: String,
-    // image
     pub src: String,
     pub alt: String,
     pub img_title: String,
-}
-
-impl InlineView {
-    pub fn leaf(kind: &str, text: impl Into<String>) -> Self {
-        Self {
-            kind: kind.into(),
-            text: text.into(),
-            ..Self::empty()
-        }
-    }
-
-    pub fn with_children(kind: &str, children: Vec<InlineView>) -> Self {
-        Self {
-            kind: kind.into(),
-            children,
-            ..Self::empty()
-        }
-    }
-
-    pub fn empty() -> Self {
-        Self {
-            kind: String::new(),
-            text: String::new(),
-            children: Vec::new(),
-            href: String::new(),
-            link_title: String::new(),
-            src: String::new(),
-            alt: String::new(),
-            img_title: String::new(),
-        }
-    }
 }
 
 // ── Blocks ────────────────────────────────────────────────────────────────────
@@ -171,38 +104,15 @@ impl InlineView {
 #[derive(Clone)]
 pub struct BlockView {
     pub kind: String,
-    // paragraph
     pub inlines: Vec<InlineView>,
-    // ad
     pub slot: String,
-    // list
     pub ordered: bool,
     pub items: Vec<ListItemView>,
-    // table
     pub headers: Vec<Vec<InlineView>>,
     pub rows: Vec<Vec<Vec<InlineView>>>,
-    // blockquote / nested blocks
     pub children: Vec<BlockView>,
-    // code block
     pub lang: String,
     pub code: String,
-}
-
-impl BlockView {
-    pub fn empty() -> Self {
-        Self {
-            kind: String::new(),
-            inlines: Vec::new(),
-            slot: String::new(),
-            ordered: false,
-            items: Vec::new(),
-            headers: Vec::new(),
-            rows: Vec::new(),
-            children: Vec::new(),
-            lang: String::new(),
-            code: String::new(),
-        }
-    }
 }
 
 #[derive(Clone)]
@@ -216,14 +126,8 @@ pub struct ListItemView {
 #[derive(Clone)]
 pub struct SectionView {
     pub has_heading: bool,
-    pub heading_level: String, // "h2" .. "h6"
+    pub heading_level: String,
     pub heading_id: String,
     pub heading_text: String,
     pub blocks: Vec<BlockView>,
 }
-
-// ── Re-export domain type used in PageView ────────────────────────────────────
-
-use std::collections::HashMap;
-
-pub use crate::domain::StoryHeader;

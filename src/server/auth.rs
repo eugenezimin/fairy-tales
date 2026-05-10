@@ -4,8 +4,6 @@
 //! Visiting `/auth/<token>` activates a short-lived server-side session backed
 //! by a signed cookie. No passwords, no user accounts.
 
-use std::time::Instant;
-
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -26,15 +24,12 @@ pub async fn activate_handler(
     jar: CookieJar,
 ) -> impl IntoResponse {
     // Simple rate limit: one attempt every 2 seconds.
-    {
-        let mut last = state.last_auth_attempt.lock().unwrap();
-        if let Some(t) = *last {
-            if t.elapsed().as_secs() < 2 {
-                return (StatusCode::TOO_MANY_REQUESTS, "slow down").into_response();
-            }
+    if let Some(last) = state.sessions.last_auth_attempt() {
+        if last.elapsed().as_secs() < 2 {
+            return (StatusCode::TOO_MANY_REQUESTS, "slow down").into_response();
         }
-        *last = Some(Instant::now());
     }
+    state.sessions.record_auth_attempt();
 
     if !constant_time_eq(
         token.as_bytes(),
@@ -44,7 +39,7 @@ pub async fn activate_handler(
     }
 
     let session_token = random_hex_token();
-    *state.admin_session.lock().unwrap() = Some((session_token.clone(), Instant::now()));
+    state.sessions.activate(session_token.clone());
 
     let cookie = Cookie::build((ADMIN_COOKIE, session_token))
         .path("/")
@@ -58,7 +53,7 @@ pub async fn activate_handler(
 }
 
 pub async fn logout_handler(State(state): State<AppState>, jar: CookieJar) -> impl IntoResponse {
-    *state.admin_session.lock().unwrap() = None;
+    state.sessions.clear();
     let mut removal = Cookie::from(ADMIN_COOKIE);
     removal.set_path("/");
     (jar.remove(removal), Redirect::to("/")).into_response()
@@ -68,15 +63,8 @@ pub async fn logout_handler(State(state): State<AppState>, jar: CookieJar) -> im
 
 /// Returns `true` when the request carries a valid, unexpired admin session.
 pub fn is_admin_session(state: &AppState, jar: &CookieJar) -> bool {
-    let cookie_value = match jar.get(ADMIN_COOKIE) {
-        Some(c) => c.value().to_string(),
-        None => return false,
-    };
-    match state.admin_session.lock().unwrap().as_ref() {
-        Some((token, activated_at)) => {
-            activated_at.elapsed().as_secs() < SESSION_MINUTES * 60
-                && constant_time_eq(cookie_value.as_bytes(), token.as_bytes())
-        }
+    match jar.get(ADMIN_COOKIE) {
+        Some(c) => state.sessions.is_active(c.value(), SESSION_MINUTES),
         None => false,
     }
 }
@@ -95,10 +83,6 @@ pub fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
 }
 
 /// Produce a pseudo-random 64-hex-char session token.
-///
-/// Uses two independent `DefaultHasher` seeds (wall clock + stack address).
-/// Not cryptographically secure, but adequate for a single-operator admin
-/// session on a trusted machine.
 fn random_hex_token() -> String {
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};

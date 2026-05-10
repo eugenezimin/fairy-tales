@@ -1,11 +1,105 @@
 //! Domain-model → view-model conversion.
 //!
-//! Pure functions; no I/O, no template logic. Each `*_view` function converts
-//! one domain type into its corresponding view type.
+//! Pure functions; no I/O, no template logic.
+//! Also owns the construction helpers for view types (`PageView::base`,
+//! `InlineView::leaf/with_children/empty`, `BlockView::empty`) — these are
+//! part of the conversion concern, not the type definitions.
 
+use std::collections::HashMap;
+
+use crate::config::FooterConfig;
 use crate::domain::{Article, Block, Inline, Section};
-use crate::render::views::{BlockView, InlineView, ListItemView, SectionView, TocEntry};
+use crate::render::views::{
+    BlockView, InlineView, ListItemView, PageContent, PageView, SectionView, TocEntry,
+};
 
+// ── PageView construction ─────────────────────────────────────────────────────
+
+impl PageView {
+    /// Build the shared fields that every page mode needs.
+    pub fn base(
+        site_title: String,
+        page_title: String,
+        theme: String,
+        year: u16,
+        is_mobile: bool,
+        is_admin: bool,
+        footer: FooterConfig,
+        content: PageContent,
+        static_base: String,
+        strings: HashMap<String, String>,
+    ) -> Self {
+        Self {
+            site_title,
+            page_title,
+            theme,
+            year,
+            is_mobile,
+            is_admin,
+            footer,
+            content: content.as_str().to_string(),
+            article_slug: String::new(),
+            sections: Vec::new(),
+            toc: Vec::new(),
+            stories: Vec::new(),
+            admin_articles: Vec::new(),
+            static_base,
+            strings,
+        }
+    }
+}
+
+// ── InlineView construction ───────────────────────────────────────────────────
+
+impl InlineView {
+    pub fn leaf(kind: &str, text: impl Into<String>) -> Self {
+        Self {
+            kind: kind.into(),
+            text: text.into(),
+            ..Self::empty()
+        }
+    }
+
+    pub fn with_children(kind: &str, children: Vec<InlineView>) -> Self {
+        Self {
+            kind: kind.into(),
+            children,
+            ..Self::empty()
+        }
+    }
+
+    pub fn empty() -> Self {
+        Self {
+            kind: String::new(),
+            text: String::new(),
+            children: Vec::new(),
+            href: String::new(),
+            link_title: String::new(),
+            src: String::new(),
+            alt: String::new(),
+            img_title: String::new(),
+        }
+    }
+}
+
+// ── BlockView construction ────────────────────────────────────────────────────
+
+impl BlockView {
+    pub fn empty() -> Self {
+        Self {
+            kind: String::new(),
+            inlines: Vec::new(),
+            slot: String::new(),
+            ordered: false,
+            items: Vec::new(),
+            headers: Vec::new(),
+            rows: Vec::new(),
+            children: Vec::new(),
+            lang: String::new(),
+            code: String::new(),
+        }
+    }
+}
 // ── TOC ───────────────────────────────────────────────────────────────────────
 
 pub fn build_toc(article: &Article) -> Vec<TocEntry> {

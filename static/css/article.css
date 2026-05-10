@@ -1,0 +1,91 @@
+/* =========================================================
+   article.css — Article page styles
+   Loaded only on content == "article" pages.
+   ========================================================= */
+
+/* ---------- Floated images ---------- */
+
+.article__img--right {
+    float: right;
+    margin: 0 0 1rem 1.5rem;
+    max-width: 40%;
+    border-radius: var(--radius);
+}
+
+.article__img--left {
+    float: left;
+    margin: 0 1.5rem 1rem 0;
+    max-width: 40%;
+    border-radius: var(--radius);
+}
+
+.article__img--center {
+    display: block;
+    margin: 1rem auto;
+    max-width: 100%;
+    border-radius: var(--radius);
+}
+
+/* ---------- Ad placeholder ---------- */
+
+.article__ad {
+    background: var(--color-hover);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--color-muted);
+    margin: 1.5rem 0;
+}
+
+/* ---------- Heading variants ---------- */
+
+.article__heading--h3 {
+    font-family: var(--font-heading, Georgia, serif);
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 0.6rem;
+    color: var(--color-text);
+}
+
+.article__heading--h4 {
+    font-family: var(--font-body, system-ui);
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--color-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* ---------- TOC indent levels ---------- */
+
+.toc__item--h3 {
+    padding-left: 0.8rem;
+}
+
+.toc__item--h4 {
+    padding-left: 1.6rem;
+}
+
+.toc__item--h3 .toc__link,
+.toc__item--h4 .toc__link {
+    font-size: 0.82rem;
+}
+
+.toc__item--h3 .toc__link::before,
+.toc__item--h4 .toc__link::before {
+    content: "";
+}
+
+/* ---------- Active story highlight ---------- */
+
+.story-list__item--active .story-list__title {
+    color: var(--color-accent);
+}
+
+.story-list__item--active {
+    border-left: 2px solid var(--color-accent);
+    padding-left: calc(0.75rem - 2px);
+}
