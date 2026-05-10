@@ -6,21 +6,20 @@
 
         <nav class="site-header__nav" id="main-nav">
             {% if content == "admin" %}
-                <a href="/">← Back to site</a>
-                <a href="/admin/logout">Log Out</a>
+            <a href="/">← Back to site</a>
+            <a href="/admin/logout">Log Out</a>
             {% else %}
-                {% if is_admin %}
-                    <a href="/admin">Articles</a>
-                    <a href="#" id="upload-trigger">Upload Article</a>
-                    <a href="/admin/logout">Log Out</a>
-                {% endif %}
+            {% if is_admin %}
+            <a href="/admin">Articles</a>
+            <a href="#" id="upload-trigger">Upload Article</a>
+            <a href="/admin/logout">Log Out</a>
+            {% endif %}
             {% endif %}
         </nav>
 
         {% if content == "article" %}
-        <button class="hamburger-btn" id="hamburger-btn"
-                aria-label="Toggle menu" aria-expanded="false"
-                aria-controls="mobile-stories-drawer">
+        <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle menu" aria-expanded="false"
+            aria-controls="mobile-stories-drawer">
             <svg class="icon-menu" viewBox="0 0 24 24" aria-hidden="true">
                 <line x1="3" y1="6" x2="21" y2="6" />
                 <line x1="3" y1="12" x2="21" y2="12" />

@@ -88,6 +88,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
 }
 
 /* ---------- Stories + TOC drawer ---------- */
@@ -268,9 +271,14 @@
 
 /* ---------- Article typography ---------- */
 
+.is-mobile .article__title-bar {
+  margin: -1.25rem -1.25rem 1.25rem -1.25rem;
+  padding: 1rem 1.25rem 0.75rem 1.25rem;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
 .is-mobile .article__title {
-  font-size: 1.5rem;
-  margin-bottom: 1.25rem;
+  font-size: 1.2rem;
 }
 
 .is-mobile .article__heading {

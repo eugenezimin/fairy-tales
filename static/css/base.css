@@ -219,14 +219,23 @@ body {
 
 /* ---------- Middle column: article ---------- */
 
+/* Sticky title bar — bleeds to column edges, sticks at viewport top */
+.article__title-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--color-article-bg);
+  margin: -2rem -2rem 1.5rem -2rem;
+  padding: 1.25rem 2rem 1rem 2rem;
+  border-bottom: 2px solid var(--color-accent);
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
 .article__title {
   font-family: var(--font-heading, Georgia, serif);
   font-size: 2rem;
   font-weight: 700;
-  margin-bottom: 1.5rem;
   color: var(--color-text);
-  border-bottom: 2px solid var(--color-accent);
-  padding-bottom: 0.75rem;
 }
 
 .article__section {
