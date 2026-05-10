@@ -1,7 +1,20 @@
 <header class="site-header">
     <div class="site-header__inner">
         <h1 class="site-header__title">
-            <a href="/" class="site-header__title-link">{{ site_title }}</a>
+            <a href="/" class="site-header__title-link">
+                <svg class="site-header__icon" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width: 48px; height: 48px;">
+                    <rect x="15" y="6" width="2" height="20" rx="1" fill="#c0392b"/>
+                    <path d="M15 8 Q7 9 5 12 L5 24 Q7 21 15 22 Z" fill="#f5f0e8" stroke="#c0392b" stroke-width="0.8"/>
+                    <line x1="7.5" y1="13" x2="13.5" y2="12.5" stroke="#8b7355" stroke-width="0.9" stroke-linecap="round"/>
+                    <line x1="7.5" y1="16" x2="13.5" y2="15.5" stroke="#8b7355" stroke-width="0.9" stroke-linecap="round"/>
+                    <line x1="7.5" y1="19" x2="13.5" y2="18.5" stroke="#8b7355" stroke-width="0.9" stroke-linecap="round"/>
+                    <path d="M17 8 Q25 9 27 12 L27 24 Q25 21 17 22 Z" fill="#f5f0e8" stroke="#c0392b" stroke-width="0.8"/>
+                    <line x1="18.5" y1="12.5" x2="24.5" y2="13" stroke="#8b7355" stroke-width="0.9" stroke-linecap="round"/>
+                    <line x1="18.5" y1="15.5" x2="24.5" y2="16" stroke="#8b7355" stroke-width="0.9" stroke-linecap="round"/>
+                    <line x1="18.5" y1="18.5" x2="24.5" y2="19" stroke="#8b7355" stroke-width="0.9" stroke-linecap="round"/>
+                </svg>
+                <span class="site-header__title-text">{{ site_title }}</span>
+            </a>
         </h1>
 
         <nav class="site-header__nav" id="main-nav">

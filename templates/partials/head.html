@@ -4,6 +4,7 @@
     <title>{{ page_title }} — {{ site_title }}</title>
 
     {% if static_base == "" %}
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <link rel="stylesheet" href="/static/css/base.css">
     <link rel="stylesheet" href="/static/css/theme-{{ theme }}.css">
     <link rel="stylesheet" href="/static/css/mobile.css">
@@ -14,6 +15,7 @@
     <link rel="stylesheet" href="/static/css/admin.css">
     {% endif %}
     {% else %}
+    <link rel="icon" type="image/svg+xml" href="{{ static_base }}/favicon.svg">
     <link rel="stylesheet" href="{{ static_base }}/css/base.css">
     <link rel="stylesheet" href="{{ static_base }}/css/theme-{{ theme }}.css">
     <link rel="stylesheet" href="{{ static_base }}/css/mobile.css">
