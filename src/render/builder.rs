@@ -45,6 +45,10 @@ impl PageView {
             admin_articles: Vec::new(),
             static_base,
             strings,
+            current_page: 1,
+            total_pages: 1,
+            has_prev: false,
+            has_next: false,
         }
     }
 }
@@ -111,6 +115,7 @@ pub fn build_toc(article: &Article) -> Vec<TocEntry> {
             anchor: h.id.clone(),
             label: h.text.clone(),
             level: format!("h{}", h.level),
+            page: 1, // ← add this
         })
         .collect()
 }
@@ -145,6 +150,33 @@ fn section_view(s: &Section, static_base: &str) -> SectionView {
             .map(|b| block_view(b, static_base))
             .collect(),
     }
+}
+
+/// Build section views from an already-sliced page of sections (no full article needed).
+pub fn build_section_views_from(sections: &[Section], static_base: &str) -> Vec<SectionView> {
+    sections
+        .iter()
+        .map(|s| section_view(s, static_base))
+        .collect()
+}
+
+/// Build a TOC where each entry carries the page number it lives on.
+/// `page_map` is anchor_id → 1-based page number (empty = pagination off).
+pub fn build_toc_paged(
+    article: &Article,
+    page_map: &std::collections::HashMap<String, usize>,
+) -> Vec<TocEntry> {
+    article
+        .sections
+        .iter()
+        .filter_map(|s| s.heading.as_ref())
+        .map(|h| TocEntry {
+            anchor: h.id.clone(),
+            label: h.text.clone(),
+            level: format!("h{}", h.level),
+            page: page_map.get(&h.id).copied().unwrap_or(1),
+        })
+        .collect()
 }
 
 // ── Blocks ────────────────────────────────────────────────────────────────────

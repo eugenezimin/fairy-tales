@@ -50,6 +50,12 @@ pub struct PageView {
     pub toc: Vec<TocEntry>,
     pub stories: Vec<StoryHeader>,
 
+    // ── Pagination (article mode only) ────────────────────────────────────────
+    pub current_page: usize,
+    pub total_pages: usize,
+    pub has_prev: bool,
+    pub has_next: bool,
+
     // ── Admin list mode only (empty otherwise) ────────────────────────────────
     pub admin_articles: Vec<AdminArticleEntry>,
     pub(crate) static_base: String,
@@ -75,6 +81,8 @@ pub struct TocEntry {
     pub label: String,
     /// `"h2"` | `"h3"` | `"h4"` | `"h5"` | `"h6"`
     pub level: String,
+    /// 1-based page number this heading lives on (always 1 when pagination off).
+    pub page: usize,
 }
 
 // ── Inlines ───────────────────────────────────────────────────────────────────

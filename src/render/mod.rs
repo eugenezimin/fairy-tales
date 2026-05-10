@@ -7,6 +7,7 @@
 
 pub mod askama_impl;
 pub mod builder;
+pub mod pagination;
 pub mod renderer;
 pub mod views;
 
@@ -17,12 +18,15 @@ use std::collections::HashMap;
 
 use crate::config::{SiteConfig, ThemeConfig};
 use crate::domain::ContentBundle;
-use crate::render::builder::{build_section_views, build_toc};
 use crate::render::views::{AdminArticleEntry, PageContent, PageView};
 
 // ── View constructors ─────────────────────────────────────────────────────────
 
 /// Build a `PageView` for a fully-loaded article page.
+/// Build a `PageView` for a fully-loaded article page.
+///
+/// `requested_page` is 1-based. When pagination is disabled it is ignored.
+/// Out-of-range values are clamped to the last valid page.
 pub fn article_view(
     site: &SiteConfig,
     theme: &ThemeConfig,
@@ -31,7 +35,32 @@ pub fn article_view(
     is_admin: bool,
     static_base: &str,
     strings: HashMap<String, String>,
+    pagination_cfg: &crate::config::PaginationConfig,
+    requested_page: usize,
 ) -> PageView {
+    let all_sections = &bundle.article.sections;
+
+    // ── Paginate (or treat everything as one page) ────────────────────────
+    let pages: Vec<Vec<crate::domain::Section>> = if pagination_cfg.enabled {
+        pagination::paginate(all_sections, pagination_cfg.symbol_limit)
+    } else {
+        vec![all_sections.to_vec()]
+    };
+
+    let total_pages = pages.len();
+    // clamp: 1-based, so valid range is 1..=total_pages
+    let current_page = requested_page.clamp(1, total_pages);
+    let page_sections = &pages[current_page - 1];
+
+    // ── Page-aware TOC ───────────────────────────────────────────────────
+    let page_map = if pagination_cfg.enabled {
+        pagination::build_page_map(&pages)
+    } else {
+        std::collections::HashMap::new()
+    };
+    let toc = builder::build_toc_paged(&bundle.article, &page_map);
+
+    // ── Build view ───────────────────────────────────────────────────────
     let mut view = PageView::base(
         site.title.clone(),
         bundle.article.title.clone(),
@@ -45,9 +74,13 @@ pub fn article_view(
         strings,
     );
     view.article_slug = bundle.article.slug.clone();
-    view.toc = build_toc(&bundle.article);
-    view.sections = build_section_views(&bundle.article, static_base);
+    view.toc = toc;
+    view.sections = builder::build_section_views_from(page_sections, static_base);
     view.stories = bundle.stories.clone();
+    view.current_page = current_page;
+    view.total_pages = total_pages;
+    view.has_prev = current_page > 1;
+    view.has_next = current_page < total_pages;
     view
 }
 

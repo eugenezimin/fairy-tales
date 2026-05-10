@@ -38,3 +38,7 @@ name = "light"
 [admin]
 # Set a strong random value here, or override with APP_ADMIN_TOKEN env var
 #token = "change-me-before-deploy"
+
+[pagination]
+enabled = true
+symbol_limit = 10000

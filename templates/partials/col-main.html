@@ -71,4 +71,23 @@
 
     </section>
     {% endfor %}
+    {% if total_pages > 1 %}
+    <nav class="article__pagination" aria-label="Article pages">
+        {% if has_prev %}
+        <a class="article__pagination-link article__pagination-link--prev"
+           href="?page={{ current_page - 1 }}">&#8592; Previous</a>
+        {% else %}
+        <span class="article__pagination-link article__pagination-link--prev article__pagination-link--disabled">&#8592; Previous</span>
+        {% endif %}
+
+        <span class="article__pagination-indicator">{{ current_page }} / {{ total_pages }}</span>
+
+        {% if has_next %}
+        <a class="article__pagination-link article__pagination-link--next"
+           href="?page={{ current_page + 1 }}">Next &#8594;</a>
+        {% else %}
+        <span class="article__pagination-link article__pagination-link--next article__pagination-link--disabled">Next &#8594;</span>
+        {% endif %}
+    </nav>
+    {% endif %}
 </article>

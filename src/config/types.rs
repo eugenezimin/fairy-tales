@@ -17,6 +17,8 @@ pub struct Config {
     pub admin: AdminConfig,
     #[serde(skip)]
     pub strings: HashMap<String, String>,
+    #[serde(default)]
+    pub pagination: PaginationConfig,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -119,4 +121,20 @@ pub struct ThemeConfig {
 #[derive(Debug, Clone, Deserialize)]
 pub struct AdminConfig {
     pub token: Option<String>,
+}
+/// Pagination feature. Off by default — add `[pagination]` to config.toml to enable.
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct PaginationConfig {
+    /// Master switch. When `false` (default), all other fields are ignored.
+    #[serde(default)]
+    pub enabled: bool,
+    /// Maximum plain-text symbols per page. Defaults to 10 000.
+    #[serde(default = "PaginationConfig::default_limit")]
+    pub symbol_limit: usize,
+}
+
+impl PaginationConfig {
+    fn default_limit() -> usize {
+        10_000
+    }
 }

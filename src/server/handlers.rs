@@ -10,20 +10,26 @@ use axum::{
 };
 use axum_extra::extract::cookie::CookieJar;
 
+use crate::domain::ContentBundle;
 use crate::render::{self, views::AdminArticleEntry};
 use crate::server::auth::is_admin_session;
 use crate::server::mobile;
 use crate::server::state::AppState;
-use crate::{config, domain::ContentBundle};
 
 // ── Public pages ──────────────────────────────────────────────────────────────
+
+#[derive(serde::Deserialize, Default)]
+pub(crate) struct PageQuery {
+    page: Option<usize>,
+}
 
 pub async fn index_handler(
     State(state): State<AppState>,
     headers: HeaderMap,
     jar: CookieJar,
+    axum::extract::Query(pq): axum::extract::Query<PageQuery>,
 ) -> impl IntoResponse {
-    serve_page(state, headers, jar, None).await
+    serve_page(state, headers, jar, None, pq.page.unwrap_or(1)).await
 }
 
 pub async fn article_handler(
@@ -31,15 +37,16 @@ pub async fn article_handler(
     headers: HeaderMap,
     jar: CookieJar,
     Path(slug): Path<String>,
+    axum::extract::Query(pq): axum::extract::Query<PageQuery>,
 ) -> impl IntoResponse {
-    serve_page(state, headers, jar, Some(slug)).await
+    serve_page(state, headers, jar, Some(slug), pq.page.unwrap_or(1)).await
 }
-
 async fn serve_page(
     state: AppState,
     headers: HeaderMap,
     jar: CookieJar,
     slug: Option<String>,
+    page: usize,
 ) -> impl IntoResponse {
     let is_mobile = mobile::detect(&headers);
     let is_admin = is_admin_session(&state, &jar);
@@ -93,6 +100,8 @@ async fn serve_page(
         is_admin,
         &resolve_static_base(&state),
         state.config.strings.clone(),
+        &state.config.pagination,
+        page,
     );
 
     match state.renderer.render(view) {
