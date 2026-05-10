@@ -6,7 +6,7 @@ DEST=/opt/fairy-tales
 cargo zigbuild --release --target x86_64-unknown-linux-musl
 
 rsync -azh --info=progress2 \
-  --include='Config.toml' \
+  --include='config.toml' \
   --include='content/' \
   --include='content/**' \
   --include='static/' \
