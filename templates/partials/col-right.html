@@ -7,7 +7,7 @@
         <ol class="toc__list" id="toc-list">
             {% for entry in toc %}
             <li class="toc__item toc__item--{{ entry.level }}">
-                <a href="{% if entry.page != 1 %}?page={{ entry.page }}{% endif %}#{{ entry.anchor }}">
+                <a class="toc__link" href="{% if entry.page != 1 %}?page={{ entry.page }}{% endif %}#{{ entry.anchor }}">
                     {{ entry.label }}
                 </a>
             </li>

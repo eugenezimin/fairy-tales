@@ -211,12 +211,6 @@ body {
 
 /* ---------- Current story ---------- */
 
-.current-story {
-  /* margin-bottom: 1.25rem;
-    padding-bottom: 1.25rem;
-    border-bottom: 1px solid var(--color-border); */
-}
-
 .current-story__title {
   font-weight: 600;
   font-size: 0.95rem;
@@ -264,6 +258,49 @@ body {
 
 .article__paragraph:last-child {
   margin-bottom: 0;
+}
+
+.article__pagination {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.article__pagination-link--prev {
+  justify-self: start;
+}
+
+.article__pagination-indicator {
+  justify-self: center;
+  font-size: 0.9rem;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.article__pagination-link--next {
+  justify-self: end;
+}
+
+.article__pagination-link {
+  text-decoration: none;
+  color: var(--color-accent);
+  font-size: 0.9rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--radius);
+  transition: background 0.15s;
+}
+
+.article__pagination-link:hover {
+  background: var(--color-hover);
+}
+
+.article__pagination-link--disabled {
+  color: var(--color-muted);
+  pointer-events: none;
 }
 
 /* ---------- Right column: TOC ---------- */
