@@ -7,6 +7,9 @@
 pub mod builder;
 pub mod views;
 
+use std::collections::HashMap;
+use std::string;
+
 use anyhow::{Context, Result};
 use askama::Template;
 
@@ -36,6 +39,7 @@ struct PageTemplate {
     sections: Vec<crate::render::views::SectionView>,
     admin_articles: Vec<AdminArticleEntry>,
     static_base: String,
+    strings: HashMap<String, String>,
 }
 
 impl PageTemplate {
@@ -55,6 +59,7 @@ impl PageTemplate {
             sections: view.sections,
             admin_articles: view.admin_articles,
             static_base: view.static_base,
+            strings: view.strings,
         }
     }
 }
@@ -78,6 +83,7 @@ pub fn article_view(
     is_mobile: bool,
     is_admin: bool,
     static_base: &str,
+    strings: HashMap<String, String>,
 ) -> PageView {
     let mut view = PageView::base(
         site.title.clone(),
@@ -89,6 +95,7 @@ pub fn article_view(
         site.footer.clone(),
         PageContent::Article,
         static_base.to_string(),
+        strings,
     );
     view.article_slug = bundle.article.slug.clone();
     view.toc = build_toc(&bundle.article);
@@ -104,6 +111,7 @@ pub fn empty_view(
     is_mobile: bool,
     is_admin: bool,
     static_base: &str,
+    strings: HashMap<String, String>,
 ) -> PageView {
     PageView::base(
         site.title.clone(),
@@ -115,6 +123,7 @@ pub fn empty_view(
         site.footer.clone(),
         PageContent::Empty,
         static_base.to_string(),
+        strings,
     )
 }
 
@@ -125,6 +134,7 @@ pub fn admin_view(
     is_mobile: bool,
     articles: Vec<AdminArticleEntry>,
     static_base: &str,
+    strings: HashMap<String, String>,
 ) -> PageView {
     let mut view = PageView::base(
         site.title.clone(),
@@ -136,6 +146,7 @@ pub fn admin_view(
         site.footer.clone(),
         PageContent::Admin,
         static_base.to_string(),
+        strings,
     );
     view.admin_articles = articles;
     view

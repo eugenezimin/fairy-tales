@@ -1,0 +1,8 @@
+other_stories = "Другие истории"
+contents = "Содержание"
+back_to_site = "← На сайт"
+log_out = "Выйти"
+articles = "Статьи"
+upload_article = "Загрузить"
+toggle_menu = "Меню"
+rendered_with = "Сделано на Rust."

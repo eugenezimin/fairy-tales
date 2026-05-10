@@ -10,11 +10,11 @@ use axum::{
 };
 use axum_extra::extract::cookie::CookieJar;
 
-use crate::domain::ContentBundle;
 use crate::render::{self, views::AdminArticleEntry};
 use crate::server::auth::is_admin_session;
 use crate::server::mobile;
 use crate::server::state::AppState;
+use crate::{config, domain::ContentBundle};
 
 // ── Public pages ──────────────────────────────────────────────────────────────
 
@@ -55,6 +55,7 @@ async fn serve_page(
                     is_mobile,
                     is_admin,
                     &resolve_static_base(&state),
+                    state.config.strings.clone(),
                 );
                 return match render::render_page(view) {
                     Ok(html) => Html(html).into_response(),
@@ -91,6 +92,7 @@ async fn serve_page(
         is_mobile,
         is_admin,
         &resolve_static_base(&state),
+        state.config.strings.clone(),
     );
 
     match render::render_page(view) {
@@ -138,6 +140,7 @@ pub async fn admin_list_handler(
         is_mobile,
         articles,
         &resolve_static_base(&state),
+        state.config.strings.clone(),
     );
 
     match render::render_page(view) {

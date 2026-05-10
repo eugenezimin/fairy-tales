@@ -50,6 +50,7 @@ pub struct PageView {
     // ── Admin list mode only (empty otherwise) ────────────────────────────────
     pub admin_articles: Vec<AdminArticleEntry>,
     pub(crate) static_base: String,
+    pub strings: HashMap<String, String>,
 }
 
 impl PageView {
@@ -64,6 +65,7 @@ impl PageView {
         footer: crate::config::FooterConfig,
         content: PageContent,
         static_base: String,
+        strings: HashMap<String, String>,
     ) -> Self {
         Self {
             site_title,
@@ -80,6 +82,7 @@ impl PageView {
             stories: Vec::new(),
             admin_articles: Vec::new(),
             static_base,
+            strings,
         }
     }
 }
@@ -220,5 +223,7 @@ pub struct SectionView {
 }
 
 // ── Re-export domain type used in PageView ────────────────────────────────────
+
+use std::collections::HashMap;
 
 pub use crate::domain::StoryHeader;

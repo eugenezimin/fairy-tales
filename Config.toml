@@ -16,6 +16,7 @@ source = "static" #"https://github.com/eugenezimin/fairy-tales/tree/main/static"
 title = "Между строк"
 page_title = "Невыдуманне истории настоящей жизни"
 footer_year = 2026
+language = "cyr" # ISO 639-1 code, e.g. "en", "ru", "es"
 
 # Optional footer overrides:
 [site.footer]

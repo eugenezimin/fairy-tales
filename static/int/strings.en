@@ -1,0 +1,8 @@
+other_stories = "Random stories"
+contents = "Contents"
+back_to_site = "Back to site"
+log_out = "Log Out"
+articles = "Articles"
+upload_article = "New Article"
+toggle_menu = "Toggle menu"
+rendered_with = "Rendered with Rust."

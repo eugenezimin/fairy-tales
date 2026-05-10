@@ -6,8 +6,10 @@
 
 use anyhow::{Context, Result};
 use serde::Deserialize;
+use std::collections::HashMap;
 use std::net::{IpAddr, SocketAddr};
 use std::path::{Path, PathBuf};
+use tokio::join;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Config {
@@ -16,6 +18,8 @@ pub struct Config {
     pub content: ContentConfig,
     pub theme: ThemeConfig,
     pub admin: AdminConfig,
+    #[serde(skip)]
+    pub strings: HashMap<String, String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -54,6 +58,7 @@ pub struct SiteConfig {
     pub title: String,
     pub page_title: String,
     pub footer_year: u16,
+    pub language: String,
     #[serde(default)]
     pub footer: FooterConfig,
 }
@@ -106,6 +111,19 @@ impl Config {
         if let Ok(tok) = std::env::var("APP_ADMIN_TOKEN") {
             cfg.admin.token = Some(tok);
         }
+
+        // Derive the strings file path from the config file's directory
+        // and the configured language, e.g. `strings.en`.
+        let strings_path = path
+            .parent()
+            .unwrap_or_else(|| Path::new("."))
+            .join("./static")
+            .join("int")
+            .join(format!("strings.{}", cfg.site.language));
+        let strings_raw = std::fs::read_to_string(&strings_path)
+            .with_context(|| format!("reading strings file at {}", strings_path.display()))?;
+        cfg.strings = toml::from_str::<HashMap<String, String>>(&strings_raw)
+            .with_context(|| format!("parsing strings file at {}", strings_path.display()))?;
 
         anyhow::ensure!(
             cfg.admin.token.as_deref().is_some_and(|t| !t.is_empty()),
