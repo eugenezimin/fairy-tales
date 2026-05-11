@@ -2,6 +2,15 @@
    article.css — Article page styles
    Loaded only on content == "article" pages.
    ========================================================= */
+/* ---------- Base image rule ---------- */
+
+.article__img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: var(--radius);
+    margin: 1rem 0;
+}
 
 /* ---------- Floated images ---------- */
 
