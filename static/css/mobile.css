@@ -42,6 +42,27 @@
 .is-mobile .site-header__nav {
   display: none;
 }
+/* Prevent title from overlapping the fixed hamburger button */
+.is-mobile .site-header__inner {
+  padding: 0 3.5rem 0 1rem; /* replaces the existing 0 1rem rule */
+}
+
+.is-mobile .site-header__title {
+  min-width: 0;
+  height: auto;        /* override the 2em from base.css */
+  overflow: hidden;
+}
+
+.is-mobile .site-header__title-link {
+  overflow: hidden;
+  max-width: 100%;
+}
+
+.is-mobile .site-header__title-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;  /* already set in base.css but scoped here for safety */
+}
 
 /* ---------- Hamburger button ---------- */
 
@@ -120,7 +141,7 @@
 }
 
 .mobile-stories-drawer__inner {
-  padding: 1rem 1.25rem 1.5rem;
+  padding: 4rem 1rem 1.5rem 1rem; /* top increased to clear the fixed hamburger button */
 }
 
 /* Section label shared by stories and TOC */
@@ -273,7 +294,7 @@
 
 .is-mobile .article__title-bar {
   margin: -1.25rem -1.25rem 1.25rem -1.25rem;
-  padding: 1rem 1.25rem 0.75rem 1.25rem;
+  padding: 1rem 3.5rem 0.75rem 1.25rem;
   border-radius: var(--radius) var(--radius) 0 0;
 }
 
