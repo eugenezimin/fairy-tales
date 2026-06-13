@@ -41,11 +41,19 @@ pub struct PageView {
     pub is_mobile: bool,
     pub is_admin: bool,
     pub footer: crate::config::FooterConfig,
-    /// Drives `{% if content == "..." %}` branches in the template.
     pub content: String,
 
     // ── Article mode only (empty otherwise) ───────────────────────────────────
     pub article_slug: String,
+    pub article_author: String,       // ← new
+    pub article_published: String,    // ← new
+    pub article_description: String,  // ← new
+    pub article_keywords: String,     // ← new
+    pub article_cover: String,        // ← new
+    pub article_og_title: String,     // ← new
+    pub article_category: String,     // ← new
+    pub article_tags: String,         // ← new
+    pub article_reading_time: String, // ← new
     pub sections: Vec<SectionView>,
     pub toc: Vec<TocEntry>,
     pub stories: Vec<StoryHeader>,

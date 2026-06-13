@@ -27,7 +27,8 @@ use crate::server::{
     auth::{activate_handler, logout_handler},
     handlers::{
         admin_list_handler, article_handler, delete_article_handler, health_handler, index_handler,
-        list_articles_redirect_handler, upload_article_handler, upload_image_handler,
+        list_articles_redirect_handler, robots_handler, sitemap_handler, upload_article_handler,
+        upload_image_handler,
     },
     middleware::security_headers,
 };
@@ -46,6 +47,8 @@ pub fn build_router(state: AppState) -> Router {
         .route("/", get(index_handler))
         .route("/article/:slug", get(article_handler))
         .route("/healthz", get(health_handler))
+        .route("/robots.txt", get(robots_handler))
+        .route("/sitemap.xml", get(sitemap_handler))
         // Auth
         .route("/auth/:token", get(activate_handler))
         .route("/admin/logout", get(logout_handler))

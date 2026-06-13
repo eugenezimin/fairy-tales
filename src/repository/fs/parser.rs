@@ -16,10 +16,19 @@ use crate::repository::fs::front_matter;
 /// Parse a complete raw article string (including optional front matter).
 pub fn parse_article(raw: &str) -> Result<Article> {
     let (front, body) = front_matter::split(raw);
-
     let slug_fm = front_matter::value(front, "slug").unwrap_or_default();
     let author = front_matter::value(front, "author").unwrap_or_default();
     let published = front_matter::value(front, "published").unwrap_or_default();
+    let description = front_matter::value(front, "description").unwrap_or_default();
+    let keywords = front_matter::value(front, "keywords").unwrap_or_default();
+    let cover = front_matter::value(front, "cover").unwrap_or_default();
+    let og_title = front_matter::value(front, "og_title").unwrap_or_default();
+    let category = front_matter::value(front, "category").unwrap_or_default();
+    let tags = front_matter::value(front, "tags").unwrap_or_default();
+    let reading_time = front_matter::value(front, "reading_time").unwrap_or_default();
+    let featured = front_matter::value(front, "featured")
+        .map(|v| v == "true")
+        .unwrap_or(false);
 
     let (title, sections) = parse_body(body);
 
@@ -49,6 +58,14 @@ pub fn parse_article(raw: &str) -> Result<Article> {
         slug,
         author,
         published,
+        description,
+        keywords,
+        cover,
+        og_title,
+        category,
+        tags,
+        reading_time,
+        featured,
         sections,
     })
 }

@@ -49,6 +49,16 @@ impl PageView {
             total_pages: 1,
             has_prev: false,
             has_next: false,
+            // inside PageView::base(), add to the Self { ... } block:
+            article_author: String::new(),
+            article_published: String::new(),
+            article_description: String::new(),
+            article_keywords: String::new(),
+            article_cover: String::new(),
+            article_og_title: String::new(),
+            article_category: String::new(),
+            article_tags: String::new(),
+            article_reading_time: String::new(),
         }
     }
 }

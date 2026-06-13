@@ -43,9 +43,7 @@ impl ServerConfig {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum StaticSource {
-    /// Serve files from a local directory (default).
     Local { source: PathBuf },
-    /// Fetch assets from a GitHub repository tree URL.
     Github { source: String },
 }
 
@@ -89,6 +87,7 @@ pub struct SiteConfig {
     pub language: String,
     #[serde(default)]
     pub footer: FooterConfig,
+    pub base_url: String,
 }
 
 /// All fields optional — unset means "use the hardcoded default".

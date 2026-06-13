@@ -92,6 +92,14 @@ pub struct Article {
     pub slug: String,
     pub author: String,
     pub published: String,
+    pub description: String,
+    pub keywords: String,
+    pub cover: String,
+    pub og_title: String,
+    pub category: String,
+    pub tags: String,
+    pub reading_time: String,
+    pub featured: bool,
     pub sections: Vec<Section>,
 }
 

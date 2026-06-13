@@ -2,7 +2,40 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="google-adsense-account" content="ca-pub-6232620868216896">
+    {% if content == "article" %}
     <title>{{ page_title }} — {{ site_title }}</title>
+    {% else %}
+    <title>{{ site_title }}</title>
+    {% endif %}
+    {% if content == "article" && article_description != "" %}
+    <meta name="description" content="{{ article_description }}">
+    {% endif %}
+    {% if content == "article" && article_keywords != "" %}
+    <meta name="keywords" content="{{ article_keywords }}">
+    {% endif %}
+    {% if content == "article" && article_author != "" %}
+    <meta name="author" content="{{ article_author }}">
+    {% endif %}
+    <!-- Open Graph -->
+    {% if content == "article" %}
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="{% if article_og_title != "" %}{{ article_og_title }}{% else %}{{ page_title }}{% endif %}">
+    {% if article_description != "" %}<meta property="og:description" content="{{ article_description }}">{% endif %}
+    {% if article_cover != "" %}<meta property="og:image" content="{{ article_cover }}">{% endif %}
+    {% if article_published != "" %}<meta property="article:published_time" content="{{ article_published }}">{% endif %}
+    {% if article_author != "" %}<meta property="article:author" content="{{ article_author }}">{% endif %}
+    {% if article_category != "" %}<meta property="article:section" content="{{ article_category }}">{% endif %}
+    {% else %}
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{{ site_title }}">
+    {% endif %}
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="{% if article_cover != "" %}summary_large_image{% else %}summary{% endif %}">
+    {% if content == "article" %}
+    <meta name="twitter:title" content="{% if article_og_title != "" %}{{ article_og_title }}{% else %}{{ page_title }}{% endif %}">
+    {% if article_description != "" %}<meta name="twitter:description" content="{{ article_description }}">{% endif %}
+    {% if article_cover != "" %}<meta name="twitter:image" content="{{ article_cover }}">{% endif %}
+    {% endif %}
     {% if static_base == "" %}
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <link rel="stylesheet" href="/static/css/base.css">

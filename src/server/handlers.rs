@@ -5,7 +5,7 @@
 
 use axum::{
     extract::{Path, State},
-    http::{HeaderMap, StatusCode},
+    http::{HeaderMap, StatusCode, header},
     response::{Html, IntoResponse, Redirect},
 };
 use axum_extra::extract::cookie::CookieJar;
@@ -282,6 +282,54 @@ pub async fn upload_image_handler(
 
 pub async fn health_handler() -> &'static str {
     "ok"
+}
+
+// ── SEO: robots.txt ───────────────────────────────────────────────────────────
+
+pub async fn robots_handler(State(state): State<AppState>) -> impl IntoResponse {
+    let base = state.config.site.base_url.trim_end_matches('/');
+    let body = format!(
+        "User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /auth/\n\nSitemap: {base}/sitemap.xml\n"
+    );
+    ([(header::CONTENT_TYPE, "text/plain; charset=utf-8")], body)
+}
+
+// ── SEO: sitemap.xml ──────────────────────────────────────────────────────────
+
+pub async fn sitemap_handler(State(state): State<AppState>) -> impl IntoResponse {
+    let base = state.config.site.base_url.trim_end_matches('/');
+
+    let articles = match state.repo.list() {
+        Ok(list) => list,
+        Err(err) => {
+            tracing::error!(error = ?err, "sitemap: failed to list articles");
+            return (StatusCode::INTERNAL_SERVER_ERROR, "failed").into_response();
+        }
+    };
+
+    let mut urls = String::new();
+    // Homepage
+    urls.push_str(&format!(
+        "  <url><loc>{base}/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>\n"
+    ));
+    for article in &articles {
+        urls.push_str(&format!(
+            "  <url><loc>{base}/article/{slug}</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>\n",
+            slug = article.slug
+        ));
+    }
+
+    let xml = format!(
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
+         <urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n\
+         {urls}</urlset>\n"
+    );
+
+    (
+        [(header::CONTENT_TYPE, "application/xml; charset=utf-8")],
+        xml,
+    )
+        .into_response()
 }
 
 fn resolve_static_base(state: &AppState) -> String {

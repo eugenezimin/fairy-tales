@@ -263,6 +263,27 @@
       },
     );
 
+    // Second pass: Obsidian wiki-link images  ![[path/to/image.png]]
+    rewritten = rewritten.replace(
+      /!\[\[([^\]]+)\]\]/g,
+      function (match, src) {
+        var basename = src.split("/").pop().split("?")[0];
+        var idx = origNames.indexOf(basename);
+        if (idx === -1) return match;
+
+        var ext = basename.split(".").pop().toLowerCase();
+        var newName = slug + "-" + counter + "." + ext;
+        mapping.push({
+          origName: basename,
+          newName: newName,
+          index: counter,
+          file: images[idx].file,
+        });
+        counter++;
+        return "![](/static/img/" + newName + ")";
+      },
+    );
+
     return { rewritten: rewritten, mapping: mapping };
   }
 

@@ -77,6 +77,16 @@ pub fn article_view(
     view.toc = toc;
     view.sections = builder::build_section_views_from(page_sections, static_base);
     view.stories = bundle.stories.clone();
+    view.article_slug = bundle.article.slug.clone();
+    view.article_author = bundle.article.author.clone();
+    view.article_published = bundle.article.published.clone();
+    view.article_description = bundle.article.description.clone();
+    view.article_keywords = bundle.article.keywords.clone();
+    view.article_cover = bundle.article.cover.clone();
+    view.article_og_title = bundle.article.og_title.clone();
+    view.article_category = bundle.article.category.clone();
+    view.article_tags = bundle.article.tags.clone();
+    view.article_reading_time = bundle.article.reading_time.clone();
     view.current_page = current_page;
     view.total_pages = total_pages;
     view.has_prev = current_page > 1;
